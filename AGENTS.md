@@ -30,6 +30,20 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   different SDK version. The official Expo Claude Code plugin is enabled in
   `.claude/settings.json` for this reason.
 
+## Branching strategy
+
+- `master` is the stable/release branch — only receives merges at logical milestones (e.g.
+  after all required features are done, after optional features are done, final delivery). It
+  should never have direct commits.
+- `develop` is the integration branch for ongoing work.
+- Each backlog step (see TECH-PLAN.md §6) gets its own short-lived `feature/<short-name>` branch
+  off `develop` (e.g. `feature/documents-api`, `feature/app-shell`). Commit there in small steps,
+  then merge back into `develop`.
+- Merges into `develop` use a regular merge commit, **not squash** — individual commits must stay
+  visible in `git log`, since that granularity is part of what's being evaluated.
+- Don't merge `develop` → `master` after every single feature branch; batch them at milestones as
+  described above, so `master`'s history reads as meaningful checkpoints rather than noise.
+
 ## How to use this file going forward
 
 Append entries here when something comes up during AI-assisted implementation that future
