@@ -124,6 +124,7 @@ src/
 │  ├─ theme/           colors.ts, spacing.ts, typography.ts
 │  ├─ utils/           formatRelativeDate.ts, id.ts
 │  ├─ network/         httpClient.ts, resolveApiBaseUrl.ts
+│  ├─ i18n/             t.ts + strings/en.ts (see §3.9)
 │  └─ hooks/           useAppState.ts   foreground/background, for notifications
 └─ __tests__/          or *.test.ts colocated next to the unit under test
 ```
@@ -274,6 +275,35 @@ This needs more than "cache to AsyncStorage" to actually hold up, so here's the 
   "catch up on" after being offline. `NotificationsClient`'s existing reconnect-with-backoff
   (§3.5) is what handles connectivity coming back; no separate offline handling is needed there.
 
+### 3.9 Internationalization (i18n)
+
+The app only ships English copy, but user-facing strings are still routed through a small
+translation layer instead of being hardcoded inline — the goal is to show the practice was
+considered, not to actually localize anything right now.
+
+- **Decision: a hand-rolled `t(key, params?)` lookup, not `i18next`.** All strings live in
+  `src/shared/i18n/strings/en.ts` as a flat, typed object (dot-namespaced keys like
+  `'documents.title'`, `'documents.addDocument'`, `'notifications.created'`), and
+  `src/shared/i18n/t.ts` exports `t()`, which looks a key up and does simple `{{param}}`
+  interpolation for the handful of dynamic strings (e.g. the notification message: `"{{user}}
+created {{document}}"`). `TranslationKey = keyof typeof en` gives autocomplete and a compile
+  error on typos or missing keys — most of the value of a "real" i18n setup, with none of the
+  runtime machinery.
+- **Why not a library today**: this app has no pluralization, no RTL, and exactly one locale.
+  `i18next`/`react-i18next` would add a context provider, async namespace loading, and a
+  pluralization/interpolation engine that would sit entirely unused — the kind of dependency
+  this plan's §3.1 principle (own code where the payoff of a library is small) argues against.
+- **Where this stops paying for itself, and what to reach for instead**: if the app actually
+  needed to ship a second language, plurals, date/number formatting per locale, or RTL layout,
+  that's the point where hand-rolling stops being the right tradeoff and `i18next` +
+  `react-i18next` (+ `expo-localization` for device locale detection) becomes the correct
+  choice — those are exactly the hard, easy-to-get-subtly-wrong problems a mature i18n library
+  exists to solve. The migration path is contained: call sites already go through `t()`, so
+  swapping the implementation behind that function is a localized change, not a rewrite.
+- Every user-facing string added from here on (labels, button text, empty/error states,
+  notification copy) goes into `en.ts` and is read via `t()` — see the convention recorded in
+  `AGENTS.md`.
+
 ## 4. Third-party libraries (final justification will be repeated in README)
 
 | Library                                     | Purpose                                                          | Alternative considered & why rejected                                                                                                                                       |
@@ -289,8 +319,9 @@ This needs more than "cache to AsyncStorage" to actually hold up, so here's the 
 
 Not used, deliberately: Redux/Zustand (see §3.3), React Query/SWR (see §3.4), `dayjs`/`date-fns`
 and `@gorhom/bottom-sheet` (see §3.7 — hand-rolled slide-up sheet covers the mockup's needs),
-`@react-navigation` (see §3.1 — no multi-screen stack exists), any ORM/DB (disallowed by the
-challenge).
+`@react-navigation` (see §3.1 — no multi-screen stack exists), `i18next`/`react-i18next` (see
+§3.9 — a single locale doesn't justify it yet, though it's the correct next step if that
+changes), any ORM/DB (disallowed by the challenge).
 
 ## 5. Testing strategy
 
