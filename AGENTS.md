@@ -54,3 +54,17 @@ Append entries here when something comes up during AI-assisted implementation th
 sessions should know without re-deriving it: a gotcha hit while coding, a prompt/approach that
 worked well, a constraint discovered in the reference server, a place where generated code
 needed correction and why. Keep entries short and dated.
+
+## Gotchas log
+
+- **2026-07-10 — `@testing-library/react-native` v14's `render()` and `fireEvent.*` are async.**
+  They return a `Promise` (the library now renders through a Fabric-compatible `test-renderer`
+  package instead of the old sync `react-test-renderer`). Forgetting `await` doesn't throw where
+  you'd expect — `screen.getByText(...)` etc. fail afterwards with a generic `` `render` function
+has not been called `` error, which is misleading if you don't already know this. Always
+  `await render(...)` and `await fireEvent.press(...)` (or whichever event) in tests.
+- **2026-07-10 — `tsc` didn't see `describe`/`it`/`expect` in test files despite `@types/jest`
+  being installed.** Had to add `"types": ["jest"]` explicitly to `tsconfig.json`'s
+  `compilerOptions` — the automatic "include every package under `node_modules/@types`" behavior
+  wasn't kicking in as expected on this Expo/TS setup. If a future `@types/*` package added for
+  something else stops being picked up, check this array first.
