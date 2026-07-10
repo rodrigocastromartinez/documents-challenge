@@ -23,6 +23,10 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   networking config.
 - The reference server has no document-creation endpoint — locally created documents are
   client-only, persisted to AsyncStorage. Don't "fix" this by inventing a fake POST call.
+- **No hardcoded user-facing strings.** Every label/button/empty-state/notification copy goes
+  into `src/shared/i18n/strings/en.ts` and is read via `t('some.key')` from
+  `src/shared/i18n/t.ts` — never inline string literals in JSX. See TECH-PLAN.md §3.9 for why
+  this is a hand-rolled lookup rather than `i18next` for now.
 - **Expo version pinning**: this project was scaffolded with Expo SDK ~57. Expo's APIs change
   meaningfully between SDK versions — before writing any Expo-API code (not plain React Native),
   check the versioned docs at `https://docs.expo.dev/versions/v57.0.0/` (or whatever the current
