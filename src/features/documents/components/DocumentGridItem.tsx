@@ -9,15 +9,16 @@ import type { Document } from '@/features/documents/types';
 
 type Props = {
   document: Document;
+  width: number;
 };
 
-export function DocumentGridItem({ document }: Props) {
+export function DocumentGridItem({ document, width }: Props) {
   const testID = `document-grid-item-${document.id}`;
   const versionLabel = t('documents.version', { version: document.version });
 
   return (
     <View
-      style={styles.card}
+      style={[styles.card, { width }]}
       testID={testID}
       accessible
       accessibilityLabel={`${document.title}, ${versionLabel}`}
@@ -39,7 +40,6 @@ export function DocumentGridItem({ document }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: spacing.lg,

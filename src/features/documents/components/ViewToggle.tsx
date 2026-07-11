@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
@@ -39,6 +40,16 @@ type ToggleButtonProps = {
 };
 
 function ToggleButton({ mode, icon, selected, onPress }: ToggleButtonProps) {
+  const [highlightOpacity] = useState(() => new Animated.Value(selected ? 1 : 0));
+
+  useEffect(() => {
+    Animated.timing(highlightOpacity, {
+      toValue: selected ? 1 : 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [selected, highlightOpacity]);
+
   return (
     <Pressable
       onPress={onPress}
@@ -48,8 +59,9 @@ function ToggleButton({ mode, icon, selected, onPress }: ToggleButtonProps) {
         mode === 'list' ? 'documents.viewMode.list' : 'documents.viewMode.grid',
       )}
       accessibilityState={{ selected }}
-      style={[styles.button, selected && styles.buttonSelected]}
+      style={styles.button}
     >
+      <Animated.View style={[styles.highlight, { opacity: highlightOpacity }]} />
       <Text style={[styles.icon, selected && styles.iconSelected]}>{icon}</Text>
     </Pressable>
   );
@@ -58,19 +70,24 @@ function ToggleButton({ mode, icon, selected, onPress }: ToggleButtonProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 2,
   },
   button: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: 8,
   },
-  buttonSelected: {
-    backgroundColor: colors.primaryLight,
+  highlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
   },
   icon: {
     fontSize: 16,

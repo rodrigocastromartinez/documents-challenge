@@ -15,7 +15,7 @@ const document: Document = {
 
 describe('DocumentGridItem', () => {
   it('renders the title and version under testIDs derived from the document id', async () => {
-    await render(<DocumentGridItem document={document} />);
+    await render(<DocumentGridItem document={document} width={160} />);
 
     expect(screen.getByTestId('document-grid-item-doc-1')).toBeOnTheScreen();
     expect(screen.getByTestId('document-grid-item-doc-1-title').props.children).toBe('Hop Rod Rye');
@@ -25,7 +25,7 @@ describe('DocumentGridItem', () => {
   });
 
   it('exposes a combined accessibility label', async () => {
-    await render(<DocumentGridItem document={document} />);
+    await render(<DocumentGridItem document={document} width={160} />);
 
     expect(screen.getByLabelText('Hop Rod Rye, Version 2.6.16')).toBeOnTheScreen();
   });

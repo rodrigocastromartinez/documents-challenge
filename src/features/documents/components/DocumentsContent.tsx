@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet } from 'react-native';
+import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 
 import { DocumentGridItem } from '@/features/documents/components/DocumentGridItem';
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
@@ -10,6 +10,8 @@ import { spacing } from '@/shared/theme/spacing';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';
 
+const GRID_COLUMNS = 2;
+
 type Props = {
   status: 'loading' | 'success' | 'error';
   documents: Document[];
@@ -18,6 +20,8 @@ type Props = {
 };
 
 export function DocumentsContent({ status, documents, viewMode, onRetry }: Props) {
+  const gridItemWidth = useGridItemWidth();
+
   if (status === 'loading' && documents.length === 0) {
     return <Spinner testID="documents-screen-loading" />;
   }
@@ -47,14 +51,25 @@ export function DocumentsContent({ status, documents, viewMode, onRetry }: Props
       style={styles.list}
       contentContainerStyle={styles.listContent}
       columnWrapperStyle={isGrid ? styles.columnWrapper : undefined}
-      numColumns={isGrid ? 2 : 1}
+      numColumns={isGrid ? GRID_COLUMNS : 1}
       data={documents}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) =>
-        isGrid ? <DocumentGridItem document={item} /> : <DocumentListItem document={item} />
+        isGrid ? (
+          <DocumentGridItem document={item} width={gridItemWidth} />
+        ) : (
+          <DocumentListItem document={item} />
+        )
       }
     />
   );
+}
+
+function useGridItemWidth() {
+  const { width } = useWindowDimensions();
+  const horizontalPadding = spacing.lg * 2;
+  const gaps = spacing.md * (GRID_COLUMNS - 1);
+  return (width - horizontalPadding - gaps) / GRID_COLUMNS;
 }
 
 const styles = StyleSheet.create({
@@ -63,7 +78,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
   },
   columnWrapper: {

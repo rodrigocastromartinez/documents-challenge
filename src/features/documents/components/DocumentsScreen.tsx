@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentsContent } from '@/features/documents/components/DocumentsContent';
@@ -10,9 +10,20 @@ import { colors } from '@/shared/theme/colors';
 import { spacing } from '@/shared/theme/spacing';
 import { t } from '@/shared/i18n/t';
 
+// Android needs to opt into LayoutAnimation on the legacy bridge; on iOS and on the New
+// Architecture (Fabric) this is already enabled and the call is a no-op.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export function DocumentsScreen() {
   const { status, documents, refetch } = useDocuments();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  function handleViewModeChange(mode: ViewMode) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setViewMode(mode);
+  }
 
   return (
     <SafeAreaView
@@ -27,7 +38,7 @@ export function DocumentsScreen() {
       </View>
       <View style={styles.content}>
         <View style={styles.controls}>
-          <ViewToggle value={viewMode} onChange={setViewMode} />
+          <ViewToggle value={viewMode} onChange={handleViewModeChange} />
         </View>
         <DocumentsContent
           status={status}
@@ -59,6 +70,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingVertical: spacing.lg,
   },
 });
