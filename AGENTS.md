@@ -72,3 +72,12 @@ has not been called `` error, which is misleading if you don't already know this
   `compilerOptions` — the automatic "include every package under `node_modules/@types`" behavior
   wasn't kicking in as expected on this Expo/TS setup. If a future `@types/*` package added for
   something else stops being picked up, check this array first.
+- **2026-07-11 — mutating `process.env.EXPO_PUBLIC_*` in tests must be in-place, never
+  `process.env = { ...originalEnv, ... }`.** `babel-preset-expo` rewrites every
+  `process.env.EXPO_PUBLIC_*` read into a reference to `env` from the virtual module
+  `expo/virtual/env`, which does `export const env = process.env` — a reference captured **once**
+  at module-load time. Reassigning the whole `process.env` object (a common Jest pattern for
+  isolating env vars per test) points the global at a new object that `env` never sees, so code
+  under test keeps reading the old values no matter what the test sets — with no error, just
+  silently stale values. Always set/delete individual keys on the existing `process.env` object
+  (see `setOrDelete` helper in `src/shared/network/__tests__/`) instead of replacing it wholesale.
