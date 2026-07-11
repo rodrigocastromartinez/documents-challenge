@@ -13,6 +13,10 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
 - Feature-based folder structure under `src/features/*`; shared code only in `src/shared/*`.
   Don't add cross-feature imports between `documents` and `notifications` — compose them at the
   screen level instead.
+- **`*Screen` files are thin composition only; no top-level `screens/` folder.** Screens live
+  inside their feature (they're the feature's visible face), and any conditional rendering
+  logic (loading/error/empty/data) gets its own component file — a locally-defined helper
+  component inside a screen file is the signal to extract it. See TECH-PLAN.md §3.2.
 - State: Context + `useReducer` per feature, no Redux/Zustand/React Query. Don't introduce a
   state management library without updating §3.3 of TECH-PLAN.md first.
 - No `@react-navigation`: this is a single-screen app plus one bottom sheet. Don't add a
@@ -31,6 +35,14 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   into `src/shared/i18n/strings/en.ts` and is read via `t('some.key')` from
   `src/shared/i18n/t.ts` — never inline string literals in JSX. See TECH-PLAN.md §3.9 for why
   this is a hand-rolled lookup rather than `i18next` for now.
+- **Every component gets a `testID` and an appropriate `accessibilityLabel`/`accessibilityRole`
+  where it renders meaningful content.** Not optional, not a pre-submission pass — add both when
+  you write the component, not after. Shared components (`Button`, `Spinner`, `EmptyState`,
+  `ErrorView`) accept `testID` as a prop; feature components derive stable, meaningful `testID`s
+  from domain data (e.g. `` `document-item-${document.id}` ``), never from array index. Tests
+  should query by `testID` (via `getByTestId`/`within(...)`) for structural assertions instead of
+  matching rendered text, so a copy change doesn't break a test that wasn't really about the
+  exact wording. See TECH-PLAN.md §3.1 and §5.
 - **Expo version pinning**: this project was scaffolded with Expo SDK ~57. Expo's APIs change
   meaningfully between SDK versions — before writing any Expo-API code (not plain React Native),
   check the versioned docs at `https://docs.expo.dev/versions/v57.0.0/` (or whatever the current
