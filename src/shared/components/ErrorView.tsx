@@ -8,17 +8,23 @@ import { t } from '@/shared/i18n/t';
 type Props = {
   message: string;
   onRetry?: () => void;
+  testID?: string;
 };
 
-export function ErrorView({ message, onRetry }: Props) {
+export function ErrorView({ message, onRetry, testID }: Props) {
   return (
-    <View style={styles.container}>
-      <Text variant="subtitle" style={styles.message}>
+    <View style={styles.container} testID={testID}>
+      <Text variant="subtitle" style={styles.message} accessibilityLabel={message}>
         {message}
       </Text>
       {onRetry ? (
         <View style={styles.action}>
-          <Button label={t('common.retry')} onPress={onRetry} variant="secondary" />
+          <Button
+            label={t('common.retry')}
+            onPress={onRetry}
+            variant="secondary"
+            testID={testID ? `${testID}-retry` : undefined}
+          />
         </View>
       ) : null}
     </View>

@@ -13,6 +13,8 @@ type Props = {
   variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
+  testID?: string;
+  accessibilityLabel?: string;
 };
 
 export function Button({
@@ -21,6 +23,8 @@ export function Button({
   variant = 'primary',
   disabled = false,
   loading = false,
+  testID,
+  accessibilityLabel,
 }: Props) {
   const isPrimary = variant === 'primary';
   const isDisabled = disabled || loading;
@@ -29,7 +33,9 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      testID={testID}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={({ pressed }) => [
         styles.base,

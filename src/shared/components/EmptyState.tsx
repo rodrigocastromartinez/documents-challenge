@@ -7,11 +7,19 @@ import { spacing } from '@/shared/theme/spacing';
 type Props = {
   title: string;
   description?: string;
+  testID?: string;
 };
 
-export function EmptyState({ title, description }: Props) {
+export function EmptyState({ title, description, testID }: Props) {
+  const accessibilityLabel = description ? `${title}. ${description}` : title;
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      testID={testID}
+      accessible
+      accessibilityLabel={accessibilityLabel}
+    >
       <Text variant="subtitle" style={styles.title}>
         {title}
       </Text>
