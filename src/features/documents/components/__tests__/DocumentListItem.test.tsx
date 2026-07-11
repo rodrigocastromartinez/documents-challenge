@@ -20,19 +20,21 @@ describe('DocumentListItem', () => {
   it('renders the title and version under testIDs derived from the document id', async () => {
     await render(<DocumentListItem document={document} />);
 
-    expect(screen.getByTestId('document-item-doc-1')).toBeOnTheScreen();
-    expect(screen.getByTestId('document-item-doc-1-title').props.children).toBe('Hop Rod Rye');
-    expect(screen.getByTestId('document-item-doc-1-version').props.children).toBe('Version 2.6.16');
+    expect(screen.getByTestId('document-list-item-doc-1')).toBeOnTheScreen();
+    expect(screen.getByTestId('document-list-item-doc-1-title').props.children).toBe('Hop Rod Rye');
+    expect(screen.getByTestId('document-list-item-doc-1-version').props.children).toBe(
+      'Version 2.6.16',
+    );
   });
 
   it('renders every contributor and attachment within their respective sections', async () => {
     await render(<DocumentListItem document={document} />);
 
-    const contributors = screen.getByTestId('document-item-doc-1-contributors');
+    const contributors = screen.getByTestId('document-list-item-doc-1-contributors');
     expect(within(contributors).getByText('Carlie Abott')).toBeOnTheScreen();
     expect(within(contributors).getByText('Zoe Buckridge')).toBeOnTheScreen();
 
-    const attachments = screen.getByTestId('document-item-doc-1-attachments');
+    const attachments = screen.getByTestId('document-list-item-doc-1-attachments');
     expect(within(attachments).getByText('Light Lager')).toBeOnTheScreen();
     expect(within(attachments).getByText('Porter')).toBeOnTheScreen();
   });

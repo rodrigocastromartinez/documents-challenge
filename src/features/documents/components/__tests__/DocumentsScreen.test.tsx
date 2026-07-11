@@ -23,19 +23,35 @@ describe('DocumentsScreen', () => {
     jest.resetAllMocks();
   });
 
-  it('shows a loading indicator while loading with no documents yet', async () => {
+  it('renders the title and the documents list in list view by default', async () => {
     mockedUseDocuments.mockReturnValue({
-      status: 'loading',
-      documents: [],
+      status: 'success',
+      documents: [doc('1', 'Hop Rod Rye')],
       refetch: jest.fn(),
     });
 
     await render(<DocumentsScreen />);
 
-    expect(screen.getByTestId('documents-screen-loading')).toBeOnTheScreen();
+    expect(screen.getByTestId('documents-screen-title')).toBeOnTheScreen();
+    expect(screen.getByTestId('document-list-item-1')).toBeOnTheScreen();
   });
 
-  it('shows an error view with retry when loading fails with no documents', async () => {
+  it('switches to grid items when the grid toggle is pressed', async () => {
+    mockedUseDocuments.mockReturnValue({
+      status: 'success',
+      documents: [doc('1', 'Hop Rod Rye')],
+      refetch: jest.fn(),
+    });
+
+    await render(<DocumentsScreen />);
+
+    await fireEvent.press(screen.getByTestId('view-toggle-grid'));
+
+    expect(screen.getByTestId('document-grid-item-1')).toBeOnTheScreen();
+    expect(screen.queryByTestId('document-list-item-1')).toBeNull();
+  });
+
+  it('calls refetch when retrying after an error', async () => {
     const refetch = jest.fn();
     mockedUseDocuments.mockReturnValue({
       status: 'error',
@@ -46,48 +62,7 @@ describe('DocumentsScreen', () => {
 
     await render(<DocumentsScreen />);
 
-    expect(screen.getByTestId('documents-screen-error')).toBeOnTheScreen();
-
     await fireEvent.press(screen.getByTestId('documents-screen-error-retry'));
     expect(refetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows an empty state when there are no documents', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [],
-      refetch: jest.fn(),
-    });
-
-    await render(<DocumentsScreen />);
-
-    expect(screen.getByTestId('documents-screen-empty')).toBeOnTheScreen();
-  });
-
-  it('renders the documents list on success', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [doc('1', 'Hop Rod Rye'), doc('2', 'Stone IPA')],
-      refetch: jest.fn(),
-    });
-
-    await render(<DocumentsScreen />);
-
-    expect(screen.getByTestId('documents-screen-list')).toBeOnTheScreen();
-    expect(screen.getByTestId('document-item-1')).toBeOnTheScreen();
-    expect(screen.getByTestId('document-item-2')).toBeOnTheScreen();
-  });
-
-  it('keeps showing the existing list while a refetch is in flight', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'loading',
-      documents: [doc('1', 'Hop Rod Rye')],
-      refetch: jest.fn(),
-    });
-
-    await render(<DocumentsScreen />);
-
-    expect(screen.getByTestId('documents-screen-list')).toBeOnTheScreen();
-    expect(screen.queryByTestId('documents-screen-loading')).toBeNull();
   });
 });

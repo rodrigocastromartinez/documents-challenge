@@ -1,15 +1,29 @@
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentsContent } from '@/features/documents/components/DocumentsContent';
+import { ViewToggle, type ViewMode } from '@/features/documents/components/ViewToggle';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
 import { spacing } from '@/shared/theme/spacing';
 import { t } from '@/shared/i18n/t';
 
+// Android needs to opt into LayoutAnimation on the legacy bridge; on iOS and on the New
+// Architecture (Fabric) this is already enabled and the call is a no-op.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export function DocumentsScreen() {
   const { status, documents, refetch } = useDocuments();
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  function handleViewModeChange(mode: ViewMode) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setViewMode(mode);
+  }
 
   return (
     <SafeAreaView
@@ -23,7 +37,15 @@ export function DocumentsScreen() {
         </Text>
       </View>
       <View style={styles.content}>
-        <DocumentsContent status={status} documents={documents} onRetry={refetch} />
+        <View style={styles.controls}>
+          <ViewToggle value={viewMode} onChange={handleViewModeChange} />
+        </View>
+        <DocumentsContent
+          status={status}
+          documents={documents}
+          viewMode={viewMode}
+          onRetry={refetch}
+        />
       </View>
     </SafeAreaView>
   );
@@ -43,5 +65,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
 });
