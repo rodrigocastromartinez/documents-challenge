@@ -265,9 +265,19 @@ variables** (Expo's `EXPO_PUBLIC_*` mechanism), never hardcoded and never commit
 - Pull-to-refresh via `FlatList`'s built-in `refreshControl` calling `useDocuments().refetch()`.
 - Share button uses the built-in React Native `Share` API (no extra dependency needed for
   plain text/URL sharing).
-- Relative dates via a small hand-written `formatRelativeDate(date: Date): string` utility
-  (covers "just now" / minutes / hours / days) — simple enough to not justify pulling in
-  `dayjs`/`date-fns` for one function, and it's easy to unit test exhaustively.
+- Relative dates via a small hand-written `formatRelativeDate(date: Date): string` utility —
+  simple enough to not justify pulling in `dayjs`/`date-fns` for one function, and it's easy to
+  unit test exhaustively. **Bounded relative range, falling back to an absolute date**: "just
+  now" / "X minutes ago" / "X hours ago" / "Yesterday" for anything within the last ~36 hours,
+  and a plain formatted date (e.g. "Mar 10, 2002") for anything older. This wasn't the original
+  plan — it came from actually running the reference server (see AGENTS.md) and finding that
+  `CreatedAt`/`UpdatedAt` are fully random timestamps with no real recency (values ranging from
+  the 1900s to decades in the future), since the server exists to generate fake data, not to
+  track real document history. An unbounded relative formatter would print nonsense like "
+  120 years ago" for most documents; capping the relative window to what's actually meaningful (today
+  vs. yesterday vs. a few hours ago) and showing a real date for everything else keeps the UI
+  honest about what the data actually is, rather than manufacturing false precision from
+  effectively random inputs.
 
 ### 3.8 Offline support (optional feature, detailed)
 
