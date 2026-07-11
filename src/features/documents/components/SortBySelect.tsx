@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
@@ -15,6 +15,7 @@ type Props = {
 
 export function SortBySelect({ value, onChange }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const { width, height } = useWindowDimensions();
 
   function handleSelect(key: SortKey) {
     onChange(key);
@@ -42,20 +43,33 @@ export function SortBySelect({ value, onChange }: Props) {
       </Pressable>
 
       {isOpen ? (
-        <View style={styles.menu} testID="sort-by-select-menu">
-          <MenuOption
-            testID="sort-by-select-option-date"
-            label={t('documents.sortBy.date')}
-            selected={value === 'date'}
-            onPress={() => handleSelect('date')}
+        <>
+          {/* Oversized, arbitrarily-positioned invisible backdrop so tapping anywhere else on
+              screen closes the menu — sized off the window instead of a fixed guess so it
+              reliably covers the screen regardless of where this control sits. */}
+          <Pressable
+            testID="sort-by-select-backdrop"
+            onPress={() => setIsOpen(false)}
+            style={[
+              styles.backdrop,
+              { top: -height, left: -width, width: width * 3, height: height * 3 },
+            ]}
           />
-          <MenuOption
-            testID="sort-by-select-option-title"
-            label={t('documents.sortBy.title')}
-            selected={value === 'title'}
-            onPress={() => handleSelect('title')}
-          />
-        </View>
+          <View style={styles.menu} testID="sort-by-select-menu">
+            <MenuOption
+              testID="sort-by-select-option-date"
+              label={t('documents.sortBy.date')}
+              selected={value === 'date'}
+              onPress={() => handleSelect('date')}
+            />
+            <MenuOption
+              testID="sort-by-select-option-title"
+              label={t('documents.sortBy.title')}
+              selected={value === 'title'}
+              onPress={() => handleSelect('title')}
+            />
+          </View>
+        </>
       ) : null}
     </View>
   );
@@ -119,9 +133,12 @@ const styles = StyleSheet.create({
   },
   chevronText: {
     fontSize: 18,
-    fontWeight: 700,
+    fontWeight: '700',
     lineHeight: 14,
     color: colors.textSecondary,
+  },
+  backdrop: {
+    position: 'absolute',
   },
   menu: {
     position: 'absolute',
@@ -135,6 +152,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     minWidth: 120,
     zIndex: 1,
+    elevation: 4,
   },
   menuOption: {
     paddingHorizontal: spacing.md,

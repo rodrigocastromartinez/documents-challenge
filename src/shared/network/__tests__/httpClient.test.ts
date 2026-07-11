@@ -48,6 +48,21 @@ describe('httpClient.get', () => {
     });
   });
 
+  it('throws an HttpError when the response body is not valid JSON', async () => {
+    mockFetchOnce({
+      ok: true,
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON at position 0');
+      },
+    });
+
+    await expect(httpClient.get('/documents')).rejects.toMatchObject({
+      name: 'HttpError',
+      status: 200,
+    });
+  });
+
   it('throws an HttpError when the request times out', async () => {
     jest.useFakeTimers();
     mockAbortableFetch();

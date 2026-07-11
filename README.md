@@ -45,13 +45,12 @@ There are two data sources you can consume data from:
 2. The real-time notifications are emitted through a websocket connection.
 
 You should set up and integrate with the testing server in the
-the [sample repository](https://github.com/holdedlab/frontend-challenge).
+the sample repository
 
 ## Requirements and additional notes
 
 - Provide source code, not the compiled code.
 - You should share your code as a Git repository (for example, using Github, Gitlab, or similar...).
-- Please make sure the name Holded are not referenced in any place in your code nor in the name of the repository
 - Commit from the very beginning and commit often. We value the possibility to review your git log.
 - Your app should run on iOS or Android
 - You can use third party libraries, but please briefly explain in the README why it's needed and which other

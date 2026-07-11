@@ -1,5 +1,7 @@
 import type { Document } from '@/features/documents/types';
 
+export type DocumentsStatus = 'loading' | 'success' | 'error';
+
 export type DocumentsState =
   | { status: 'loading'; documents: Document[] }
   | { status: 'success'; documents: Document[] }

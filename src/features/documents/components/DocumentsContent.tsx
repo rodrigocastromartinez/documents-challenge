@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
 import { DocumentGridItem } from '@/features/documents/components/DocumentGridItem';
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
 import type { ViewMode } from '@/features/documents/components/ViewToggle';
+import type { DocumentsStatus } from '@/features/documents/store/documentsReducer';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorView } from '@/shared/components/ErrorView';
 import { Spinner } from '@/shared/components/Spinner';
@@ -13,7 +14,7 @@ import type { Document } from '@/features/documents/types';
 const GRID_COLUMNS = 2;
 
 type Props = {
-  status: 'loading' | 'success' | 'error';
+  status: DocumentsStatus;
   documents: Document[];
   viewMode: ViewMode;
   onRetry: () => void;
