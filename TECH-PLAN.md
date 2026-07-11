@@ -84,6 +84,16 @@ actions, and component props — directly supports "maintainable, well-written c
   dialog), toggled by local state. See §3.7 for how it's built. If a real navigation need shows
   up later (e.g. a document detail screen), it's a self-contained addition at that point —
   nothing in this plan depends on avoiding it out of principle.
+- **Every component gets a `testID` and, where it renders meaningful content, an
+  `accessibilityLabel`/`accessibilityRole`.** This isn't an afterthought bolted on before
+  submission — it's a rule applied from the first component (see AGENTS.md). Two distinct
+  reasons drive this, not one: (1) tests query by `testID` rather than matching rendered text,
+  so a copy change (i18n string, exact wording) doesn't break a test that was really asserting
+  "this element is present and did X," not "this exact string is on screen"; (2) VoiceOver/
+  TalkBack support isn't optional polish for a document-management app. Shared components
+  (`Button`, `Spinner`, `EmptyState`, `ErrorView`) accept `testID` as a prop so call sites can
+  assign meaningful, unique IDs; feature components derive `testID`s from stable domain data
+  where one exists (e.g. `` `document-item-${document.id}` ``) rather than from array index.
 
 ### 3.2 Folder structure
 
@@ -101,7 +111,8 @@ src/
 │  │  │  ├─ useDocuments.ts
 │  │  │  └─ useCreateDocument.ts
 │  │  ├─ components/
-│  │  │  ├─ DocumentsScreen.tsx
+│  │  │  ├─ DocumentsScreen.tsx   thin composition: header + <DocumentsContent />
+│  │  │  ├─ DocumentsContent.tsx  loading / error / empty / list state switch
 │  │  │  ├─ DocumentListItem.tsx
 │  │  │  ├─ DocumentGridItem.tsx
 │  │  │  ├─ ViewToggle.tsx        list / grid switch
@@ -133,6 +144,21 @@ Why this scales: adding a new feature (e.g. document detail) means adding
 `features/document-detail/` without touching `documents` or `notifications` internals. Changing
 a requirement (e.g. "documents must come from a different backend") is isolated to
 `features/documents/api/`.
+
+Two structure conventions worth making explicit:
+
+- **`*Screen` files are thin composition only.** A screen wires state (hooks) to components and
+  lays out the top-level regions; any conditional rendering logic (loading/error/empty/data
+  switches) lives in its own component (`DocumentsContent`), not inline in the screen. If a
+  screen file needs a locally-defined helper component, that's the signal to extract it.
+- **No top-level `screens/` folder — screens are feature-owned.** A global `screens/` directory
+  was considered and rejected: it reintroduces layer-based grouping, splitting each feature
+  across two trees (its screen in `screens/`, everything else in `features/`), so a requirement
+  change touches both. Folders should group what changes together, not what looks alike —
+  `DocumentsScreen` is the visible face of the documents feature, so it lives with it. If a
+  feature ever grows several screens, they'd go under `features/<name>/screens/`, still inside
+  the feature. The only screen-related thing that lives at the top is composition itself
+  (`App.tsx` mounting providers + the screen), which is genuinely app-level.
 
 ### 3.3 State management
 
@@ -229,6 +255,18 @@ variables** (Expo's `EXPO_PUBLIC_*` mechanism), never hardcoded and never commit
 - Single `DocumentsScreen` (matches the mockups): header with title + notification bell,
   a controls row (`SortBySelect` + `ViewToggle`), the list/grid itself, and a bottom
   "Add document" button that opens `AddDocumentSheet`.
+- **Two-tone background, matching the mockups exactly**: the header (title + bell) sits on a
+  white background that also fills the safe-area inset above it (status bar/notch), while the
+  content area below (controls row + list/grid) sits on the light gray background — the split
+  happens right below the header, not at the screen edges. Implementation: the outer
+  `SafeAreaView` itself is white (so its top safe-area padding renders white, not gray), and a
+  separate inner `View` wrapping the content area carries the gray background. Getting this
+  backwards (gray on the outer container) was the first UI review finding — worth calling out
+  since it's an easy default to get wrong when reasoning about "one background color" instead of
+  the actual two-region layout in the mockup.
+- **Cards have a subtle shadow** (`shadowColor`/`shadowOffset`/`shadowOpacity`/`shadowRadius` on
+  iOS, `elevation` on Android via `Platform.select`), matching the mockup's card treatment —
+  without it the white cards have no visual separation from the gray background behind them.
 - **`AddDocumentSheet` (bottom sheet, not a centered modal)**: built on top of React Native's
   built-in `Modal` (`transparent` + `animationType="slide"`) — a dimmed backdrop `View` behind a
   sheet `View` anchored to the bottom of the screen with rounded top corners, containing the
@@ -377,7 +415,10 @@ changes), any ORM/DB (disallowed by the challenge).
   loading → success, loading → error, refetch, and message-arrival paths.
 - **Components** (React Native Testing Library): `DocumentListItem`/`DocumentGridItem`
   rendering, `ViewToggle` switching, `SortBySelect` changing order, `AddDocumentSheet` submit
-  flow, `NotificationBanner` appearing/dismissing.
+  flow, `NotificationBanner` appearing/dismissing. Queries prefer `getByTestId`/`within(...)`
+  over `getByText` for structural assertions (element present, correct section, event fired);
+  `getByText`/`getByLabelText` are still the right tool when the thing actually under test is
+  the rendered copy or the accessibility tree itself (see §3.1).
 - **E2E (committed deliverable)**: Maestro flows covering the golden path — launch app, see the
   documents list, switch to grid view, change sort order, create a document via the modal, see
   it appear at the top of the list, and receive/observe an in-app notification. This is planned
