@@ -1,7 +1,8 @@
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
+import { cardShadow } from '@/shared/theme/shadow';
 import { spacing } from '@/shared/theme/spacing';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';
@@ -11,7 +12,7 @@ type Props = {
 };
 
 export function DocumentListItem({ document }: Props) {
-  const testID = `document-item-${document.id}`;
+  const testID = `document-list-item-${document.id}`;
   const versionLabel = t('documents.version', { version: document.version });
 
   return (
@@ -61,19 +62,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: spacing.lg,
-    marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.08,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    ...cardShadow,
   },
   header: {
     flexDirection: 'row',
