@@ -402,7 +402,7 @@ changes), any ORM/DB (disallowed by the challenge).
 19. Polish: empty/error states, accessibility labels, loading states
 20. Maestro E2E golden-path flow
 21. Final `README.md`: setup, run, test instructions, architecture rationale, library
-    justification
+    justification, CI status badge
 
 Each step above is meant to be a small, self-contained commit (or short series of commits),
 reviewable independently, per the challenge's request to "commit from the very beginning and
