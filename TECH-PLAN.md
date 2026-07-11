@@ -12,8 +12,9 @@ from it.
 
 ## 1. Server integration facts (from the reference server)
 
-The client integrates with [`holdedlab/frontend-challenge`](https://github.com/holdedlab/frontend-challenge),
-a Go server that must be run locally:
+The client integrates with the reference Go server provided alongside this challenge's brief
+(its repository URL is in the original brief, not repeated here since the challenge asks not to
+reference the company name anywhere in this project). It must be run locally:
 
 - `GET http://localhost:8080/documents` — returns a JSON array of 1-21 randomly generated
   documents on every call. Document shape: `ID`, `Title`, `Version`, `CreatedAt`, `UpdatedAt`,
@@ -118,6 +119,7 @@ src/
 │  │  │  ├─ ViewToggle.tsx        list / grid switch
 │  │  │  ├─ SortBySelect.tsx      title / date sort control
 │  │  │  └─ AddDocumentSheet.tsx  Name / Version / File form
+│  │  ├─ sortDocuments.ts          pure (documents, sortKey) -> Document[]
 │  │  └─ types.ts
 │  └─ notifications/
 │     ├─ socket/
