@@ -33,6 +33,10 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   `expo` version in `package.json` is) rather than relying on training data, which may reflect a
   different SDK version. The official Expo Claude Code plugin is enabled in
   `.claude/settings.json` for this reason.
+- **`assets/*.png` are committed placeholders (Expo's default icon/splash), not final art.**
+  They're tracked deliberately — `app.json` references them, so a fresh clone must have them to
+  build at all — but they're expected to be swapped for real icons before final delivery. Don't
+  re-add a `.gitignore` rule for them; just replace the files in place when real assets exist.
 
 ## Branching strategy
 
