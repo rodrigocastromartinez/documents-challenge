@@ -23,6 +23,10 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   networking config.
 - The reference server has no document-creation endpoint — locally created documents are
   client-only, persisted to AsyncStorage. Don't "fix" this by inventing a fake POST call.
+- **`CreatedAt`/`UpdatedAt` from the reference server are fully random**, not real timestamps
+  (verified by actually running the server locally — values ranged from 1904 to decades in the
+  future). Don't build anything that assumes these are meaningful recency signals beyond "some
+  date to display." `formatRelativeDate` is bounded because of this — see TECH-PLAN.md §3.7.
 - **No hardcoded user-facing strings.** Every label/button/empty-state/notification copy goes
   into `src/shared/i18n/strings/en.ts` and is read via `t('some.key')` from
   `src/shared/i18n/t.ts` — never inline string literals in JSX. See TECH-PLAN.md §3.9 for why
