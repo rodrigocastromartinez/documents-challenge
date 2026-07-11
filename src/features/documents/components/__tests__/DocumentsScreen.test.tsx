@@ -8,12 +8,12 @@ jest.mock('@/features/documents/hooks/useDocuments');
 
 const mockedUseDocuments = useDocuments as jest.MockedFunction<typeof useDocuments>;
 
-const doc = (id: string, title: string): Document => ({
+const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'): Document => ({
   id,
   title,
   version: '1.0.0',
-  createdAt: '2026-07-01T10:00:00.000Z',
-  updatedAt: '2026-07-01T10:00:00.000Z',
+  createdAt,
+  updatedAt: createdAt,
   attachments: [],
   contributors: [],
 });
@@ -49,6 +49,30 @@ describe('DocumentsScreen', () => {
 
     expect(screen.getByTestId('document-grid-item-1')).toBeOnTheScreen();
     expect(screen.queryByTestId('document-list-item-1')).toBeNull();
+  });
+
+  it('defaults to sorting by date (most recent first) and reorders when Title is selected', async () => {
+    mockedUseDocuments.mockReturnValue({
+      status: 'success',
+      documents: [
+        doc('a', 'Alpha', '2020-01-01T00:00:00.000Z'),
+        doc('b', 'Zeta', '2026-01-01T00:00:00.000Z'),
+      ],
+      refetch: jest.fn(),
+    });
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.getAllByTestId(/^document-list-item-[ab]$/)[0]?.props.testID).toBe(
+      'document-list-item-b',
+    );
+
+    await fireEvent.press(screen.getByTestId('sort-by-select-trigger'));
+    await fireEvent.press(screen.getByTestId('sort-by-select-option-title'));
+
+    expect(screen.getAllByTestId(/^document-list-item-[ab]$/)[0]?.props.testID).toBe(
+      'document-list-item-a',
+    );
   });
 
   it('calls refetch when retrying after an error', async () => {

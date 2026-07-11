@@ -7,6 +7,9 @@ export const en = {
   'documents.empty': 'No documents yet',
   'documents.viewMode.list': 'Switch to list view',
   'documents.viewMode.grid': 'Switch to grid view',
+  'documents.sortBy': 'Sort by',
+  'documents.sortBy.date': 'Date',
+  'documents.sortBy.title': 'Title',
   'common.retry': 'Retry',
   'common.loading': 'Loading',
 } as const;

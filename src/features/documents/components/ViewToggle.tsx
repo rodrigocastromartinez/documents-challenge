@@ -79,6 +79,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   highlight: {
     position: 'absolute',
@@ -91,6 +93,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 16,
+    lineHeight: 16,
     color: colors.textSecondary,
   },
   iconSelected: {
