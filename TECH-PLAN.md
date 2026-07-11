@@ -164,6 +164,12 @@ only depend on the `use*()` hook API, not on Context internals.
   `"remote"`) so the UI can optionally indicate that, and are prepended to the merged list shown
   to the user, and (for offline support) persisted to `AsyncStorage` so they survive an app
   restart.
+- **Local document IDs use `expo-crypto`'s `randomUUID()`**, not a hand-rolled generator.
+  Hermes doesn't ship `crypto.randomUUID`, so something has to fill that gap — and ID generation
+  is exactly the kind of small-surface-but-easy-to-get-subtly-wrong problem (RFC 4122 format,
+  actual CSPRNG-backed randomness) this plan's §3.1 principle already carves out an exception
+  for, the same reasoning applied to `NetInfo` in §3.8. `expo-crypto` is already effectively
+  "in the SDK" — no bare-workflow cost to reach for it.
 - No React Query/SWR: the API surface is a single GET endpoint with no pagination, mutation, or
   cache-invalidation complexity that would justify the dependency; a hand-written reducer covers
   it more transparently.
@@ -181,6 +187,15 @@ only depend on the `use*()` hook API, not on Context internals.
   created document Y"); optionally a small history screen/badge. If the optional "local
   notifications" feature is implemented, the same message pipeline triggers an
   `expo-notifications` local notification when the app is backgrounded.
+- **A notification does not insert a document into the list.** The two features are wired
+  together only through the user noticing the banner and pulling to refresh — the notification
+  feed and the documents list are deliberately not merged. Reasoning: the reference server
+  regenerates 1-21 random documents on every `GET /documents` call, so it has no stable
+  document identity across requests. Inserting a document sourced from a notification's
+  `DocumentID`/`DocumentTitle` would produce an entry that very likely vanishes or contradicts
+  the list on the next fetch (initial load or pull-to-refresh) — a confusing, self-contradicting
+  UI. Treating the notification purely as "something changed, you may want to refresh" avoids
+  building a merge/reconciliation layer for data the server itself doesn't keep stable.
 
 ### 3.6 Networking base URL resolution — via environment variables
 
@@ -221,15 +236,32 @@ variables** (Expo's `EXPO_PUBLIC_*` mechanism), never hardcoded and never commit
   and no intermediate snap points, just slide-in/slide-out, so this is hand-rolled instead of
   pulling in `@gorhom/bottom-sheet` (which exists for drag-to-resize/snap-point sheets — more
   than this UI needs). If a future requirement adds drag-to-dismiss or multiple snap points,
-  that's the point where introducing that library would start paying for itself.
+  that's the point where introducing that library would start paying for itself. Since the sheet
+  has text inputs and sits at the bottom of the screen, it wraps its content in a
+  `KeyboardAvoidingView` — otherwise the keyboard covers the `Name`/`Version` fields on both
+  platforms, a well-known RN footgun for bottom-anchored forms.
+- **The "File" field is a non-functional placeholder for now** ("Choose file" button that just
+  reflects a fixed/mock filename into the form state, not a real picker). Given the server has
+  no upload endpoint at all (§1), a real file the user picks would have nowhere to go except the
+  same client-only `Attachments` array as a plain string — so wiring up an actual native picker
+  buys realism without buying any new behavior worth demonstrating. `expo-document-picker` is
+  the correct library **if** this becomes a real field later: it's a thin, purpose-built wrapper
+  over each platform's native file picker UI, and reimplementing that native chrome by hand would
+  be pure busywork. That decision is deliberately deferred rather than made now — revisit this
+  note if the placeholder ends up feeling too thin during implementation.
 - List/grid toggle over the same `Document[]` data source: one `FlatList` with `numColumns`
   driven by view mode, sharing a single item-shape contract but two presentational components
-  (`DocumentListItem`, `DocumentGridItem`).
+  (`DocumentListItem`, `DocumentGridItem`). Note for implementation: RN's `FlatList` throws if
+  `numColumns` changes on a list that's already rendered with a different value — the list needs
+  a `key` (e.g. `key={viewMode}`) tied to the view mode so it remounts instead of updating in
+  place when the toggle is pressed.
 - **Sort by** control (`SortBySelect`): lets the user sort the documents by **Title** (A→Z) or
-  **Date** (newest first, using `CreatedAt`). Sorting is a derived value (`useMemo` over the
-  reducer's document list + the selected sort key), not stored state duplicated elsewhere —
-  keeps a single source of truth for "what documents exist" separate from "how they're
-  currently ordered."
+  **Date** (newest first, using `CreatedAt`). **Default is Date**, matching required feature #1
+  ("display the most recent documents created") — the list should already read as
+  most-recent-first before the user touches the sort control, not after. Sorting is a derived
+  value (`useMemo` over the reducer's document list + the selected sort key), not stored state
+  duplicated elsewhere — keeps a single source of truth for "what documents exist" separate from
+  "how they're currently ordered."
 - Pull-to-refresh via `FlatList`'s built-in `refreshControl` calling `useDocuments().refetch()`.
 - Share button uses the built-in React Native `Share` API (no extra dependency needed for
   plain text/URL sharing).
@@ -309,9 +341,11 @@ created {{document}}"`). `TranslationKey = keyof typeof en` gives autocomplete a
 | Library                                     | Purpose                                                          | Alternative considered & why rejected                                                                                                                                       |
 | ------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Expo SDK                                    | runtime & tooling                                                | RN CLI — no native module actually needed, adds setup friction (see §2 for why my usual choice differs on other projects)                                                   |
+| `react-native-safe-area-context`            | safe-area-aware layout for the screen header                     | RN's built-in `SafeAreaView` — deprecated on Android; this is the maintained, cross-platform replacement Expo itself recommends                                             |
 | `@react-native-async-storage/async-storage` | key-value cache for offline support + local document persistence | This is explicitly allowed (not a DB/ORM) as a storage primitive; `expo-file-system` would be lower-level than needed                                                       |
 | `@react-native-community/netinfo`           | connectivity detection for the offline banner (see §3.8)         | Hand-rolled reachability checks — platform-specific and easy to get subtly wrong; this is a small, focused, well-maintained library for exactly this problem                |
-| `expo-sharing` / RN `Share` API             | native share sheet (optional feature)                            | Custom native module — unnecessary, RN/Expo already exposes this                                                                                                            |
+| `expo-crypto`                               | `randomUUID()` for locally-created document IDs (see §3.4)       | Hand-rolled ID generator — Hermes has no `crypto.randomUUID`, and getting RFC 4122 format/randomness right by hand isn't worth owning                                       |
+| RN `Share` API                              | native share sheet (optional feature)                            | `expo-sharing` — solves file/URI sharing specifically; the built-in `Share` API already covers this app's plain text/URL sharing need with zero extra dependency            |
 | `expo-notifications`                        | local notifications (optional feature)                           | `notifee` — more powerful but requires a dev build regardless; no benefit for local-only notifications here                                                                 |
 | `jest` + `@testing-library/react-native`    | unit/component testing                                           | De facto standard in the RN ecosystem                                                                                                                                       |
 | `jest-websocket-mock` (dev)                 | testing `NotificationsClient` without a real server              | Hand-mocking `WebSocket` — more brittle, reinvents an existing well-tested tool                                                                                             |
@@ -319,7 +353,9 @@ created {{document}}"`). `TranslationKey = keyof typeof en` gives autocomplete a
 
 Not used, deliberately: Redux/Zustand (see §3.3), React Query/SWR (see §3.4), `dayjs`/`date-fns`
 and `@gorhom/bottom-sheet` (see §3.7 — hand-rolled slide-up sheet covers the mockup's needs),
-`@react-navigation` (see §3.1 — no multi-screen stack exists), `i18next`/`react-i18next` (see
+`@react-navigation` (see §3.1 — no multi-screen stack exists), `expo-document-picker` (see §3.7
+— the File field is a placeholder since the server has no upload endpoint; this is the right
+library to reach for if that field becomes real), `i18next`/`react-i18next` (see
 §3.9 — a single locale doesn't justify it yet, though it's the correct next step if that
 changes), any ORM/DB (disallowed by the challenge).
 
@@ -343,25 +379,29 @@ changes), any ORM/DB (disallowed by the challenge).
 1. Scaffold Expo TS project, folder structure, ESLint/Prettier, strict `tsconfig`,
    `.env.example` + `.gitignore` for `.env`
 2. App shell: `App.tsx` + providers composition + empty `DocumentsScreen`
-3. Shared theme/UI kit (colors, spacing, `Text`/`Button`/`Spinner`/`EmptyState`/`ErrorView`)
-4. Network config (`resolveApiBaseUrl` via env vars) + `httpClient` wrapper + tests
-5. `documents/api` (`getDocuments`) + tests
-6. `useDocuments` (reducer: loading/success/error/refetch) + tests
-7. List UI (`FlatList` + `DocumentListItem`) + tests
-8. Grid UI + `ViewToggle`
-9. `SortBySelect` (title / date) + tests
-10. Pull-to-refresh
-11. `formatRelativeDate` + tests, wired into item components
-12. Local document creation flow (`AddDocumentSheet`, reducer action, persistence) + tests
-13. `NotificationsClient` (WebSocket + reconnect/backoff) + tests
-14. Notifications store/hook + `NotificationBell` + `NotificationBanner` UI + tests
-15. Share button integration
-16. Offline support: `documentsStorage` (cache + local doc persistence), hydrate-then-revalidate
+3. Shared theme/UI kit (colors, spacing, `Text`/`Button`/`Spinner`/`EmptyState`/`ErrorView`) +
+   Jest/RNTL setup
+4. CI pipeline (GitHub Actions): `tsc`, `eslint`, `prettier --check`, `jest` on every push/PR —
+   set up early so every subsequent step is checked automatically, not just at the end
+5. Network config (`resolveApiBaseUrl` via env vars) + `httpClient` wrapper + tests
+6. `documents/api` (`getDocuments`) + tests
+7. `useDocuments` (reducer: loading/success/error/refetch) + tests
+8. List UI (`FlatList` + `DocumentListItem`) + tests
+9. Grid UI + `ViewToggle`
+10. `SortBySelect` (title / date, defaulting to date — see §3.7) + tests
+11. Pull-to-refresh
+12. `formatRelativeDate` + tests, wired into item components
+13. Local document creation flow (`AddDocumentSheet` incl. placeholder File field, `expo-crypto`
+    for local IDs, reducer action, persistence) + tests
+14. `NotificationsClient` (WebSocket + reconnect/backoff) + tests
+15. Notifications store/hook + `NotificationBell` + `NotificationBanner` UI + tests
+16. Share button integration
+17. Offline support: `documentsStorage` (cache + local doc persistence), hydrate-then-revalidate
     in `useDocuments`, `NetInfo`-driven offline banner (see §3.8) + tests
-17. Local notifications (background) integration
-18. Polish: empty/error states, accessibility labels, loading states
-19. Maestro E2E golden-path flow
-20. Final `README.md`: setup, run, test instructions, architecture rationale, library
+18. Local notifications (background) integration
+19. Polish: empty/error states, accessibility labels, loading states
+20. Maestro E2E golden-path flow
+21. Final `README.md`: setup, run, test instructions, architecture rationale, library
     justification
 
 Each step above is meant to be a small, self-contained commit (or short series of commits),
