@@ -40,4 +40,15 @@ describe('SortBySelect', () => {
     expect(onChange).toHaveBeenCalledWith('title');
     expect(screen.queryByTestId('sort-by-select-menu')).toBeNull();
   });
+
+  it('closes the menu when the backdrop is pressed, without calling onChange', async () => {
+    const onChange = jest.fn();
+    await render(<SortBySelect value="date" onChange={onChange} />);
+
+    await fireEvent.press(screen.getByTestId('sort-by-select-trigger'));
+    await fireEvent.press(screen.getByTestId('sort-by-select-backdrop'));
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('sort-by-select-menu')).toBeNull();
+  });
 });

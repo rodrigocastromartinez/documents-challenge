@@ -41,7 +41,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     );
   }
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new HttpError(`Response from ${path} was not valid JSON: ${message}`, response.status);
+  }
 }
 
 export const httpClient = {
