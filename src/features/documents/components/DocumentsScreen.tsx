@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DocumentsContent } from '@/features/documents/components/DocumentsContent';
+import { SortBySelect, type SortKey } from '@/features/documents/components/SortBySelect';
 import { ViewToggle, type ViewMode } from '@/features/documents/components/ViewToggle';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
+import { sortDocuments } from '@/features/documents/sortDocuments';
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
 import { spacing } from '@/shared/theme/spacing';
@@ -19,10 +21,18 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export function DocumentsScreen() {
   const { status, documents, refetch } = useDocuments();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+
+  const sortedDocuments = useMemo(() => sortDocuments(documents, sortKey), [documents, sortKey]);
 
   function handleViewModeChange(mode: ViewMode) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setViewMode(mode);
+  }
+
+  function handleSortKeyChange(key: SortKey) {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSortKey(key);
   }
 
   return (
@@ -38,11 +48,12 @@ export function DocumentsScreen() {
       </View>
       <View style={styles.content}>
         <View style={styles.controls}>
+          <SortBySelect value={sortKey} onChange={handleSortKeyChange} />
           <ViewToggle value={viewMode} onChange={handleViewModeChange} />
         </View>
         <DocumentsContent
           status={status}
-          documents={documents}
+          documents={sortedDocuments}
           viewMode={viewMode}
           onRetry={refetch}
         />
@@ -68,8 +79,11 @@ const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
+    // Sits above DocumentsContent's FlatList so SortBySelect's absolutely-positioned dropdown
+    // isn't painted over by list content rendered after it in the tree.
+    zIndex: 1,
   },
 });

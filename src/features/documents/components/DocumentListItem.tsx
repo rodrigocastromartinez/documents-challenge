@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   title: {
-    flex: 1,
+    flexShrink: 1,
     marginRight: spacing.sm,
   },
   columns: {
