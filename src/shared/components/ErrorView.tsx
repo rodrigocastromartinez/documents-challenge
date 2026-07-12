@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/shared/components/Button';
 import { Text } from '@/shared/components/Text';
-import { spacing } from '@/shared/theme/spacing';
+import { spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 type Props = {

@@ -2,19 +2,20 @@ import { useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AddDocumentSheet } from '@/features/documents/components/AddDocumentSheet';
-import { DocumentsContent } from '@/features/documents/components/DocumentsContent';
-import { SortBySelect, type SortKey } from '@/features/documents/components/SortBySelect';
-import { ViewToggle, type ViewMode } from '@/features/documents/components/ViewToggle';
+import {
+  AddDocumentSheet,
+  DocumentsContent,
+  SortBySelect,
+  ViewToggle,
+  type SortKey,
+  type ViewMode,
+} from '@/features/documents/components';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { sortDocuments } from '@/features/documents/sortDocuments';
-import { NotificationBanner } from '@/features/notifications/components/NotificationBanner';
-import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { NotificationBanner, NotificationBell } from '@/features/notifications';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
-import { Button } from '@/shared/components/Button';
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import { Button, Text } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 // Android needs to opt into LayoutAnimation on the legacy bridge; on iOS and on the New

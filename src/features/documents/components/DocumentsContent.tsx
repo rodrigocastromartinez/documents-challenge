@@ -3,12 +3,9 @@ import { FlatList, RefreshControl, StyleSheet, useWindowDimensions } from 'react
 import { DocumentGridItem } from '@/features/documents/components/DocumentGridItem';
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
 import type { ViewMode } from '@/features/documents/components/ViewToggle';
-import type { DocumentsStatus } from '@/features/documents/store/documentsReducer';
-import { EmptyState } from '@/shared/components/EmptyState';
-import { ErrorView } from '@/shared/components/ErrorView';
-import { Spinner } from '@/shared/components/Spinner';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import type { DocumentsStatus } from '@/features/documents/store';
+import { EmptyState, ErrorView, Spinner } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';
 

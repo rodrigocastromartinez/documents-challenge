@@ -27,6 +27,26 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
   code already says. If a comment would just narrate what the next line does, delete it instead
   of writing it. This codebase had a real problem with comment bloat from over-explaining
   otherwise self-evident code; keep code self-documenting through naming instead.
+- **Barrel `index.ts` files exist for `shared/components`, `shared/theme`, each feature's
+  `components/` and `store/`, and each feature's top level** (`features/documents`,
+  `features/notifications`) — import from those instead of deep individual-file paths when
+  consuming from _outside_ the folder. `shared/i18n` and `shared/utils` deliberately don't get
+  one: every call site only ever imports a single named export (`t`, `formatRelativeDate`) from
+  them, so a barrel would add a file without shortening anything.
+  **A file _inside_ a barreled folder must keep importing its siblings via their direct deep
+  path, never through that folder's own barrel** — e.g. `DocumentsContent.tsx` imports
+  `DocumentGridItem` directly even though both are re-exported by
+  `documents/components/index.ts`. Importing the barrel from within the same folder it
+  re-exports is a circular import (`index.ts` → sibling → `index.ts` → ...); Metro/Jest usually
+  papers over it, but it's fragile and not worth the risk. `DocumentsScreen.tsx` is deliberately
+  _excluded_ from `documents/components/index.ts` for this exact reason — it needs to consume
+  its sibling components through the barrel (it's the one place that legitimately benefits from
+  it), which is only safe because nothing in that barrel imports `DocumentsScreen` back.
+  Hooks (`useDocuments`, `useNotifications`) are deliberately **not** re-exported through any
+  barrel and stay as direct deep imports at every call site — they're `jest.mock()`'d by exact
+  module path in tests (e.g. `jest.mock('@/features/documents/hooks/useDocuments')`), and
+  routing a mocked hook through a barrel risks either silently not being intercepted or
+  auto-mocking unrelated sibling exports from the same barrel.
 - State: Context + `useReducer` per feature, no Redux/Zustand/React Query. Don't introduce a
   state management library without updating §3.3 of TECH-PLAN.md first.
 - No `@react-navigation`: this is a single-screen app plus one bottom sheet. Don't add a

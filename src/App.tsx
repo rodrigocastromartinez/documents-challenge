@@ -1,9 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { DocumentsScreen } from '@/features/documents/components/DocumentsScreen';
-import { DocumentsProvider } from '@/features/documents/store/DocumentsProvider';
-import { NotificationsProvider } from '@/features/notifications/store/NotificationsProvider';
+import { DocumentsProvider, DocumentsScreen } from '@/features/documents';
+import { NotificationsProvider } from '@/features/notifications';
 
 export default function App() {
   return (

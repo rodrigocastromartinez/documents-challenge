@@ -1,8 +1,7 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import { Text } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 const bellIcon = require('@/features/notifications/assets/bell.webp');

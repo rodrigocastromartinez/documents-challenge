@@ -1,7 +1,6 @@
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
-import { colors } from '@/shared/theme/colors';
-import { typography } from '@/shared/theme/typography';
+import { colors, typography } from '@/shared/theme';
 
 type Variant = keyof typeof typography;
 
