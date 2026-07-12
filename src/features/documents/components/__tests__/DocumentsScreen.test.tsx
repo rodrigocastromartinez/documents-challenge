@@ -3,10 +3,13 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { DocumentsScreen } from '@/features/documents/components/DocumentsScreen';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import type { Document } from '@/features/documents/types';
+import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 
 jest.mock('@/features/documents/hooks/useDocuments');
+jest.mock('@/features/notifications/hooks/useNotifications');
 
 const mockedUseDocuments = useDocuments as jest.MockedFunction<typeof useDocuments>;
+const mockedUseNotifications = useNotifications as jest.MockedFunction<typeof useNotifications>;
 
 const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'): Document => ({
   id,
@@ -20,6 +23,15 @@ const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'):
 });
 
 describe('DocumentsScreen', () => {
+  beforeEach(() => {
+    mockedUseNotifications.mockReturnValue({
+      status: 'open',
+      unreadCount: 0,
+      latestMessage: null,
+      markAllRead: jest.fn(),
+    });
+  });
+
   afterEach(() => {
     // clearAllMocks, not resetAllMocks: see AGENTS.md gotchas log — resetAllMocks strips a
     // jest.fn(impl)'s implementation permanently, which would break AsyncStorage's mock for the
@@ -125,5 +137,35 @@ describe('DocumentsScreen', () => {
       attachments: ['document.pdf'],
     });
     expect(screen.queryByTestId('add-document-sheet-name-input')).toBeNull();
+  });
+
+  it('shows the unread badge and banner from notifications, and marks read on bell press', async () => {
+    const markAllRead = jest.fn();
+    mockedUseDocuments.mockReturnValue({
+      status: 'success',
+      documents: [doc('1', 'Hop Rod Rye')],
+      refetch: jest.fn(),
+      addLocalDocument: jest.fn(),
+    });
+    mockedUseNotifications.mockReturnValue({
+      status: 'open',
+      unreadCount: 2,
+      latestMessage: {
+        timestamp: '2026-07-12T10:00:00.000Z',
+        userId: 'user-1',
+        userName: 'Ada Lovelace',
+        documentId: 'doc-1',
+        documentTitle: 'Analytical Engine Notes',
+      },
+      markAllRead,
+    });
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.getByTestId('notification-bell-badge')).toHaveTextContent('2');
+    expect(screen.getByTestId('notification-banner')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId('notification-bell'));
+    expect(markAllRead).toHaveBeenCalledTimes(1);
   });
 });

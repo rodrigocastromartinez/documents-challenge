@@ -11,12 +11,42 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
 
 - TypeScript strict mode everywhere; no `any` without a comment justifying it.
 - Feature-based folder structure under `src/features/*`; shared code only in `src/shared/*`.
-  Don't add cross-feature imports between `documents` and `notifications` — compose them at the
-  screen level instead.
+  Don't add cross-feature imports between `documents` and `notifications` outside of `*Screen`
+  files — see the next bullet for why screens are the one designated exception.
 - **`*Screen` files are thin composition only; no top-level `screens/` folder.** Screens live
   inside their feature (they're the feature's visible face), and any conditional rendering
   logic (loading/error/empty/data) gets its own component file — a locally-defined helper
   component inside a screen file is the signal to extract it. See TECH-PLAN.md §3.2.
+  **`*Screen` files are also the one place allowed to import another feature's public
+  components/hooks** (e.g. `DocumentsScreen` importing `NotificationBell`/`useNotifications`) —
+  they _are_ "the screen level" the cross-feature-import rule above refers to. Only screens get
+  this exception; a non-screen file in `documents/` still may not reach into `notifications/`,
+  or vice versa.
+- **Don't add comments by default.** Only add one when it captures a non-obvious _why_ (a
+  constraint, a workaround, a decision that would surprise a reader) — never to restate what the
+  code already says. If a comment would just narrate what the next line does, delete it instead
+  of writing it. This codebase had a real problem with comment bloat from over-explaining
+  otherwise self-evident code; keep code self-documenting through naming instead.
+- **Barrel `index.ts` files exist for `shared/components`, `shared/theme`, each feature's
+  `components/` and `store/`, and each feature's top level** (`features/documents`,
+  `features/notifications`) — import from those instead of deep individual-file paths when
+  consuming from _outside_ the folder. `shared/i18n` and `shared/utils` deliberately don't get
+  one: every call site only ever imports a single named export (`t`, `formatRelativeDate`) from
+  them, so a barrel would add a file without shortening anything.
+  **A file _inside_ a barreled folder must keep importing its siblings via their direct deep
+  path, never through that folder's own barrel** — e.g. `DocumentsContent.tsx` imports
+  `DocumentGridItem` directly even though both are re-exported by
+  `documents/components/index.ts`. Importing the barrel from within the same folder it
+  re-exports is a circular import (`index.ts` → sibling → `index.ts` → ...); Metro/Jest usually
+  papers over it, but it's fragile and not worth the risk. `DocumentsScreen.tsx` is deliberately
+  _excluded_ from `documents/components/index.ts` for this exact reason — it needs to consume
+  its sibling components through the barrel (it's the one place that legitimately benefits from
+  it), which is only safe because nothing in that barrel imports `DocumentsScreen` back.
+  Hooks (`useDocuments`, `useNotifications`) are deliberately **not** re-exported through any
+  barrel and stay as direct deep imports at every call site — they're `jest.mock()`'d by exact
+  module path in tests (e.g. `jest.mock('@/features/documents/hooks/useDocuments')`), and
+  routing a mocked hook through a barrel risks either silently not being intercepted or
+  auto-mocking unrelated sibling exports from the same barrel.
 - State: Context + `useReducer` per feature, no Redux/Zustand/React Query. Don't introduce a
   state management library without updating §3.3 of TECH-PLAN.md first.
 - No `@react-navigation`: this is a single-screen app plus one bottom sheet. Don't add a
@@ -128,3 +158,12 @@ require('@react-native-async-storage/async-storage/jest/async-storage-mock'))` i
   AsyncStorage (e.g. `DocumentsProvider` via `useDocuments` tests) must use
   `jest.clearAllMocks()` in its `afterEach`, not `resetAllMocks()` — `clearAllMocks` only clears
   call history and leaves implementations intact.
+- **2026-07-12 — `jest-websocket-mock` (via `mock-socket`) and `jest.useFakeTimers()` don't mix.**
+  `mock-socket` simulates the WebSocket handshake/close sequence internally via real `setTimeout`
+  calls; faking timers before those internal timers fire makes `await server.connected` (or
+  `.closed`) hang forever, even with `jest.advanceTimersByTimeAsync(...)`. This is a documented
+  limitation in the library's own README ("Known issues"), not something fixable by sequencing
+  calls differently. Don't try to test exact reconnect-backoff _timing_ through a mocked
+  WebSocket — extract the delay math into a plain, timer-free function (see
+  `computeReconnectDelay` in `NotificationsClient.ts`) and unit-test that directly; keep the
+  WebSocket-integration tests on real timers with small millisecond delays instead.

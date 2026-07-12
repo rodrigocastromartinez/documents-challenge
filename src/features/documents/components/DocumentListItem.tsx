@@ -1,9 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { cardShadow } from '@/shared/theme/shadow';
-import { spacing } from '@/shared/theme/spacing';
+import { Text } from '@/shared/components';
+import { cardShadow, colors, spacing } from '@/shared/theme';
 import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';

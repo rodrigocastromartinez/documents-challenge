@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { colors } from '@/shared/theme/colors';
+import { colors } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 type Props = {

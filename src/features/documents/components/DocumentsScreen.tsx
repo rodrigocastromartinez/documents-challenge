@@ -2,16 +2,20 @@ import { useMemo, useState } from 'react';
 import { LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AddDocumentSheet } from '@/features/documents/components/AddDocumentSheet';
-import { DocumentsContent } from '@/features/documents/components/DocumentsContent';
-import { SortBySelect, type SortKey } from '@/features/documents/components/SortBySelect';
-import { ViewToggle, type ViewMode } from '@/features/documents/components/ViewToggle';
+import {
+  AddDocumentSheet,
+  DocumentsContent,
+  SortBySelect,
+  ViewToggle,
+  type SortKey,
+  type ViewMode,
+} from '@/features/documents/components';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { sortDocuments } from '@/features/documents/sortDocuments';
-import { Button } from '@/shared/components/Button';
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import { NotificationBanner, NotificationBell } from '@/features/notifications';
+import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { Button, Text } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 // Android needs to opt into LayoutAnimation on the legacy bridge; on iOS and on the New
@@ -22,6 +26,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export function DocumentsScreen() {
   const { status, documents, refetch, addLocalDocument } = useDocuments();
+  const { unreadCount, latestMessage, markAllRead } = useNotifications();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
@@ -48,8 +53,16 @@ export function DocumentsScreen() {
         <Text variant="title" testID="documents-screen-title">
           {t('documents.title')}
         </Text>
+        <NotificationBell
+          unreadCount={unreadCount}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            markAllRead();
+          }}
+        />
       </View>
       <View style={styles.content}>
+        <NotificationBanner message={latestMessage} />
         <View style={styles.controls}>
           <SortBySelect value={sortKey} onChange={handleSortKeyChange} />
           <ViewToggle value={viewMode} onChange={handleViewModeChange} />
@@ -87,6 +100,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,

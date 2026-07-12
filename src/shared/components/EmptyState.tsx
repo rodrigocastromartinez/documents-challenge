@@ -1,8 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import { colors, spacing } from '@/shared/theme';
 
 type Props = {
   title: string;

@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import { Text } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 export type SortKey = 'date' | 'title';

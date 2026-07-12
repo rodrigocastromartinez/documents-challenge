@@ -9,11 +9,9 @@ import {
   View,
 } from 'react-native';
 
-import type { AddLocalDocumentInput } from '@/features/documents/store/DocumentsProvider';
-import { Button } from '@/shared/components/Button';
-import { Text } from '@/shared/components/Text';
-import { colors } from '@/shared/theme/colors';
-import { spacing } from '@/shared/theme/spacing';
+import type { AddLocalDocumentInput } from '@/features/documents/store';
+import { Button, Text } from '@/shared/components';
+import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
 // Placeholder filename dropped into the form when "Choose file" is pressed. The reference
