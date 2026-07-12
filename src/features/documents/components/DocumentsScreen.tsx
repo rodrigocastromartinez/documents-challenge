@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   AddDocumentSheet,
   DocumentsContent,
+  OfflineBanner,
   SortBySelect,
   ViewToggle,
   type SortKey,
@@ -15,6 +16,7 @@ import { sortDocuments } from '@/features/documents/sortDocuments';
 import { NotificationBanner, NotificationBell } from '@/features/notifications';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { Button, Text } from '@/shared/components';
+import { useIsOnline } from '@/shared/hooks/useIsOnline';
 import { colors, spacing } from '@/shared/theme';
 import { t } from '@/shared/i18n/t';
 
@@ -25,13 +27,18 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export function DocumentsScreen() {
-  const { status, documents, refetch, addLocalDocument } = useDocuments();
+  const { status, documents, cachedAt, refetch, addLocalDocument } = useDocuments();
   const { unreadCount, latestMessage, markAllRead } = useNotifications();
+  const isOnline = useIsOnline();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
 
   const sortedDocuments = useMemo(() => sortDocuments(documents, sortKey), [documents, sortKey]);
+
+  // Offline banner: NetInfo catches connectivity loss proactively; a failed fetch with data
+  // still on screen covers the server being unreachable while the network itself is fine.
+  const isShowingStaleData = documents.length > 0 && (!isOnline || status === 'error');
 
   function handleViewModeChange(mode: ViewMode) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -62,6 +69,7 @@ export function DocumentsScreen() {
         />
       </View>
       <View style={styles.content}>
+        {isShowingStaleData ? <OfflineBanner cachedAt={cachedAt} /> : null}
         <NotificationBanner message={latestMessage} />
         <View style={styles.controls}>
           <SortBySelect value={sortKey} onChange={handleSortKeyChange} />

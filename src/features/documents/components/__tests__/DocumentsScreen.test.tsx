@@ -4,12 +4,15 @@ import { DocumentsScreen } from '@/features/documents/components/DocumentsScreen
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import type { Document } from '@/features/documents/types';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { useIsOnline } from '@/shared/hooks/useIsOnline';
 
 jest.mock('@/features/documents/hooks/useDocuments');
 jest.mock('@/features/notifications/hooks/useNotifications');
+jest.mock('@/shared/hooks/useIsOnline');
 
 const mockedUseDocuments = useDocuments as jest.MockedFunction<typeof useDocuments>;
 const mockedUseNotifications = useNotifications as jest.MockedFunction<typeof useNotifications>;
+const mockedUseIsOnline = useIsOnline as jest.MockedFunction<typeof useIsOnline>;
 
 const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'): Document => ({
   id,
@@ -22,6 +25,18 @@ const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'):
   origin: 'remote',
 });
 
+const documentsValue = (
+  overrides: Partial<ReturnType<typeof useDocuments>> = {},
+): ReturnType<typeof useDocuments> =>
+  ({
+    status: 'success',
+    documents: [doc('1', 'Hop Rod Rye')],
+    cachedAt: null,
+    refetch: jest.fn(),
+    addLocalDocument: jest.fn(),
+    ...overrides,
+  }) as ReturnType<typeof useDocuments>;
+
 describe('DocumentsScreen', () => {
   beforeEach(() => {
     mockedUseNotifications.mockReturnValue({
@@ -30,6 +45,7 @@ describe('DocumentsScreen', () => {
       latestMessage: null,
       markAllRead: jest.fn(),
     });
+    mockedUseIsOnline.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -40,12 +56,7 @@ describe('DocumentsScreen', () => {
   });
 
   it('renders the title and the documents list in list view by default', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [doc('1', 'Hop Rod Rye')],
-      refetch: jest.fn(),
-      addLocalDocument: jest.fn(),
-    });
+    mockedUseDocuments.mockReturnValue(documentsValue());
 
     await render(<DocumentsScreen />);
 
@@ -54,12 +65,7 @@ describe('DocumentsScreen', () => {
   });
 
   it('switches to grid items when the grid toggle is pressed', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [doc('1', 'Hop Rod Rye')],
-      refetch: jest.fn(),
-      addLocalDocument: jest.fn(),
-    });
+    mockedUseDocuments.mockReturnValue(documentsValue());
 
     await render(<DocumentsScreen />);
 
@@ -70,15 +76,14 @@ describe('DocumentsScreen', () => {
   });
 
   it('defaults to sorting by date (most recent first) and reorders when Title is selected', async () => {
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [
-        doc('a', 'Alpha', '2020-01-01T00:00:00.000Z'),
-        doc('b', 'Zeta', '2026-01-01T00:00:00.000Z'),
-      ],
-      refetch: jest.fn(),
-      addLocalDocument: jest.fn(),
-    });
+    mockedUseDocuments.mockReturnValue(
+      documentsValue({
+        documents: [
+          doc('a', 'Alpha', '2020-01-01T00:00:00.000Z'),
+          doc('b', 'Zeta', '2026-01-01T00:00:00.000Z'),
+        ],
+      }),
+    );
 
     await render(<DocumentsScreen />);
 
@@ -96,13 +101,9 @@ describe('DocumentsScreen', () => {
 
   it('calls refetch when retrying after an error', async () => {
     const refetch = jest.fn();
-    mockedUseDocuments.mockReturnValue({
-      status: 'error',
-      documents: [],
-      error: 'network down',
-      refetch,
-      addLocalDocument: jest.fn(),
-    });
+    mockedUseDocuments.mockReturnValue(
+      documentsValue({ status: 'error', documents: [], error: 'network down', refetch }),
+    );
 
     await render(<DocumentsScreen />);
 
@@ -112,12 +113,7 @@ describe('DocumentsScreen', () => {
 
   it('opens the add-document sheet, submits it, and closes it again', async () => {
     const addLocalDocument = jest.fn();
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [doc('1', 'Hop Rod Rye')],
-      refetch: jest.fn(),
-      addLocalDocument,
-    });
+    mockedUseDocuments.mockReturnValue(documentsValue({ addLocalDocument }));
 
     await render(<DocumentsScreen />);
 
@@ -141,12 +137,7 @@ describe('DocumentsScreen', () => {
 
   it('shows the unread badge and banner from notifications, and marks read on bell press', async () => {
     const markAllRead = jest.fn();
-    mockedUseDocuments.mockReturnValue({
-      status: 'success',
-      documents: [doc('1', 'Hop Rod Rye')],
-      refetch: jest.fn(),
-      addLocalDocument: jest.fn(),
-    });
+    mockedUseDocuments.mockReturnValue(documentsValue());
     mockedUseNotifications.mockReturnValue({
       status: 'open',
       unreadCount: 2,
@@ -167,5 +158,39 @@ describe('DocumentsScreen', () => {
 
     await fireEvent.press(screen.getByTestId('notification-bell'));
     expect(markAllRead).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the offline banner when online with a healthy fetch', async () => {
+    mockedUseDocuments.mockReturnValue(documentsValue());
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.queryByTestId('offline-banner')).toBeNull();
+  });
+
+  it('shows the offline banner when connectivity is lost while showing documents', async () => {
+    mockedUseIsOnline.mockReturnValue(false);
+    mockedUseDocuments.mockReturnValue(documentsValue({ cachedAt: '2026-07-12T10:00:00.000Z' }));
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.getByTestId('offline-banner')).toBeOnTheScreen();
+    expect(screen.getByTestId('document-list-item-1')).toBeOnTheScreen();
+  });
+
+  it('shows the offline banner (not the error screen) when a fetch fails with cached documents', async () => {
+    mockedUseDocuments.mockReturnValue(
+      documentsValue({
+        status: 'error',
+        error: 'network down',
+        cachedAt: '2026-07-12T10:00:00.000Z',
+      }),
+    );
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.getByTestId('offline-banner')).toBeOnTheScreen();
+    expect(screen.getByTestId('document-list-item-1')).toBeOnTheScreen();
+    expect(screen.queryByTestId('documents-screen-error')).toBeNull();
   });
 });
