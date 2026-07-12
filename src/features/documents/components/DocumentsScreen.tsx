@@ -55,7 +55,7 @@ export function DocumentsScreen() {
           status={status}
           documents={sortedDocuments}
           viewMode={viewMode}
-          onRetry={refetch}
+          onRefresh={refetch}
         />
       </View>
     </SafeAreaView>
