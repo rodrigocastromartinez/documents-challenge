@@ -207,14 +207,31 @@ only depend on the `use*()` hook API, not on Context internals.
 - `NotificationsClient` — a small class wrapping the native `WebSocket`: connects to
   `ws://<host>:8080/notifications`, parses incoming JSON messages, exposes `onMessage`/`onStatus`
   callbacks, and implements reconnect-with-backoff on close/error (capped exponential backoff,
-  cancellable on unmount). This is unit-tested in isolation with `jest-websocket-mock` and fake
-  timers, independent of React.
-- `NotificationsProvider` — instantiates the client, feeds messages into a reducer (append to
-  feed, increment unread count), tears the client down on unmount.
-- UI: an in-app banner/toast appears when a message arrives while the app is foregrounded ("X
-  created document Y"); optionally a small history screen/badge. If the optional "local
-  notifications" feature is implemented, the same message pipeline triggers an
-  `expo-notifications` local notification when the app is backgrounded.
+  cancellable on unmount). Unit-tested in isolation with `jest-websocket-mock`, independent of
+  React; the backoff delay math is factored into a plain `computeReconnectDelay` function so it
+  can be tested without fake timers, which don't mix with `jest-websocket-mock` (see AGENTS.md).
+- `NotificationsProvider` — instantiates the client, feeds messages into a reducer tracking
+  connection status, unread count, and the single most recent message (no feed/history is kept —
+  see the "not merged with documents" reasoning below), tears the client down on unmount.
+- UI: `NotificationBell` (header icon + unread badge) and `NotificationBanner` (an in-app
+  toast — "X created document Y" — that auto-dismisses after a few seconds or on manual
+  dismiss). If the optional "local notifications" feature is implemented, the same message
+  pipeline triggers an `expo-notifications` local notification when the app is backgrounded.
+- **The bell glyph is a `.webp` image asset (`features/notifications/assets/bell.webp`),
+  tinted via `Image`'s `tintColor` style, not a vector icon library.** `react-native-svg` was
+  tried first, but pulling in a full SVG-rendering library for a single static icon isn't
+  justified — this app has exactly one icon that needs to look like a real vector glyph rather
+  than a text/emoji character (see §3.7 for why `☰`/`⊞`/`✕` elsewhere are plain text glyphs
+  instead). A pre-rendered image sized for its one fixed use gets the same visual result with no
+  new dependency, consistent with §3.1's "own code/assets over dependencies where the payoff is
+  small."
+- **Pressing the bell clears the unread count _and_ dismisses the banner.** The brief doesn't
+  fully specify how the bell and the banner should interact, so this is a deliberate
+  interpretation: from the user's point of view, tapping the bell means "I've seen this", and
+  leaving a banner on screen claiming there's something new to see while the badge simultaneously
+  resets to zero would read as a contradiction. There is still no history screen behind the bell
+  (out of scope per the "optionally a small history" wording above) — tapping it purely
+  acknowledges the current unread state.
 - **A notification does not insert a document into the list.** The two features are wired
   together only through the user noticing the banner and pulling to refresh — the notification
   feed and the documents list are deliberately not merged. Reasoning: the reference server

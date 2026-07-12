@@ -8,6 +8,9 @@ import { SortBySelect, type SortKey } from '@/features/documents/components/Sort
 import { ViewToggle, type ViewMode } from '@/features/documents/components/ViewToggle';
 import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import { sortDocuments } from '@/features/documents/sortDocuments';
+import { NotificationBanner } from '@/features/notifications/components/NotificationBanner';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { Button } from '@/shared/components/Button';
 import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
@@ -22,6 +25,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export function DocumentsScreen() {
   const { status, documents, refetch, addLocalDocument } = useDocuments();
+  const { unreadCount, latestMessage, markAllRead } = useNotifications();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
@@ -48,8 +52,16 @@ export function DocumentsScreen() {
         <Text variant="title" testID="documents-screen-title">
           {t('documents.title')}
         </Text>
+        <NotificationBell
+          unreadCount={unreadCount}
+          onPress={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            markAllRead();
+          }}
+        />
       </View>
       <View style={styles.content}>
+        <NotificationBanner message={latestMessage} />
         <View style={styles.controls}>
           <SortBySelect value={sortKey} onChange={handleSortKeyChange} />
           <ViewToggle value={viewMode} onChange={handleViewModeChange} />
@@ -87,6 +99,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,

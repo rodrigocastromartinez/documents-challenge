@@ -1,14 +1,5 @@
+import type { NotificationMessage, NotificationsStatus } from '@/features/notifications/types';
 import { resolveApiBaseUrl } from '@/shared/network/resolveApiBaseUrl';
-
-export type NotificationMessage = {
-  timestamp: string;
-  userId: string;
-  userName: string;
-  documentId: string;
-  documentTitle: string;
-};
-
-export type NotificationsStatus = 'connecting' | 'open' | 'closed';
 
 type RawNotificationMessage = {
   Timestamp: string;
@@ -35,10 +26,8 @@ function resolveWebSocketUrl(): string {
 const BASE_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
-// Exported standalone so the backoff math can be unit-tested without a real/mocked WebSocket —
-// jest-websocket-mock's underlying `mock-socket` relies heavily on real timers internally, so
-// combining it with jest.useFakeTimers() to test exact delay values is unreliable (see its
-// README's "Known issues" section).
+// Extracted so the backoff math is unit-testable without fake timers, which don't mix with
+// jest-websocket-mock (see AGENTS.md).
 export function computeReconnectDelay(
   attempt: number,
   baseDelayMs: number,
@@ -55,10 +44,6 @@ export type NotificationsClientOptions = {
   maxReconnectDelayMs?: number;
 };
 
-// Wraps the native WebSocket connecting to the reference server's notification feed. Reconnects
-// automatically with capped exponential backoff on any close/error, since the feed is expected
-// to stay open for the app's whole lifetime (see TECH-PLAN.md §3.5). Deliberately independent of
-// React so it can be unit-tested (jest-websocket-mock) without rendering anything.
 export class NotificationsClient {
   private readonly url: string;
   private readonly onMessage: (message: NotificationMessage) => void;
@@ -103,9 +88,8 @@ export class NotificationsClient {
     this.socket = socket;
 
     socket.onopen = () => {
-      // Ignore events from a socket that's no longer `this.socket` — can happen when
-      // disconnect() immediately followed by connect() races with this (now-stale) socket's own
-      // async event delivery (e.g. React StrictMode's mount/unmount/remount in dev).
+      // Stale socket from a disconnect() immediately followed by connect() (e.g. StrictMode
+      // remount) — its own async events can still arrive after `this.socket` has moved on.
       if (socket !== this.socket) {
         return;
       }
@@ -129,9 +113,7 @@ export class NotificationsClient {
       if (socket !== this.socket) {
         return;
       }
-      // A deliberate disconnect() shouldn't be reported as a "closed" status — that status is
-      // meant to signal an unexpected drop worth surfacing to the user (e.g. via a banner), not
-      // an intentional teardown (e.g. on unmount).
+      // A deliberate disconnect() isn't an unexpected drop — don't report it as "closed".
       if (this.stopped) {
         return;
       }

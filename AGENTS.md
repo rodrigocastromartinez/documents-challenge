@@ -11,12 +11,22 @@ See [TECH-PLAN.md](TECH-PLAN.md) for the architecture and feature plan itself.
 
 - TypeScript strict mode everywhere; no `any` without a comment justifying it.
 - Feature-based folder structure under `src/features/*`; shared code only in `src/shared/*`.
-  Don't add cross-feature imports between `documents` and `notifications` — compose them at the
-  screen level instead.
+  Don't add cross-feature imports between `documents` and `notifications` outside of `*Screen`
+  files — see the next bullet for why screens are the one designated exception.
 - **`*Screen` files are thin composition only; no top-level `screens/` folder.** Screens live
   inside their feature (they're the feature's visible face), and any conditional rendering
   logic (loading/error/empty/data) gets its own component file — a locally-defined helper
   component inside a screen file is the signal to extract it. See TECH-PLAN.md §3.2.
+  **`*Screen` files are also the one place allowed to import another feature's public
+  components/hooks** (e.g. `DocumentsScreen` importing `NotificationBell`/`useNotifications`) —
+  they _are_ "the screen level" the cross-feature-import rule above refers to. Only screens get
+  this exception; a non-screen file in `documents/` still may not reach into `notifications/`,
+  or vice versa.
+- **Don't add comments by default.** Only add one when it captures a non-obvious _why_ (a
+  constraint, a workaround, a decision that would surprise a reader) — never to restate what the
+  code already says. If a comment would just narrate what the next line does, delete it instead
+  of writing it. This codebase had a real problem with comment bloat from over-explaining
+  otherwise self-evident code; keep code self-documenting through naming instead.
 - State: Context + `useReducer` per feature, no Redux/Zustand/React Query. Don't introduce a
   state management library without updating §3.3 of TECH-PLAN.md first.
 - No `@react-navigation`: this is a single-screen app plus one bottom sheet. Don't add a

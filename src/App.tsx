@@ -3,12 +3,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DocumentsScreen } from '@/features/documents/components/DocumentsScreen';
 import { DocumentsProvider } from '@/features/documents/store/DocumentsProvider';
+import { NotificationsProvider } from '@/features/notifications/store/NotificationsProvider';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <DocumentsProvider>
-        <DocumentsScreen />
+        <NotificationsProvider>
+          <DocumentsScreen />
+        </NotificationsProvider>
       </DocumentsProvider>
       <StatusBar style="auto" />
     </SafeAreaProvider>

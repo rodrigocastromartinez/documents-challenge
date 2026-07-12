@@ -27,11 +27,7 @@ describe('computeReconnectDelay', () => {
   });
 });
 
-// Real timers throughout: mock-socket (which jest-websocket-mock wraps) relies heavily on
-// setTimeout internally to simulate the connection handshake, and combining it with
-// jest.useFakeTimers() leaves those internal timers stuck — see the library's README "Known
-// issues" section. Exponential backoff math itself is covered above without any WebSocket
-// involved; these tests only need small, real delays to stay fast.
+// Real timers throughout: fake timers don't mix with jest-websocket-mock (see AGENTS.md).
 describe('NotificationsClient', () => {
   let server: WebSocketServer;
 
