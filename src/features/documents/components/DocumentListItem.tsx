@@ -4,6 +4,7 @@ import { Text } from '@/shared/components/Text';
 import { colors } from '@/shared/theme/colors';
 import { cardShadow } from '@/shared/theme/shadow';
 import { spacing } from '@/shared/theme/spacing';
+import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';
 
@@ -14,13 +15,16 @@ type Props = {
 export function DocumentListItem({ document }: Props) {
   const testID = `document-list-item-${document.id}`;
   const versionLabel = t('documents.version', { version: document.version });
+  const createdAtLabel = t('documents.createdAt', {
+    date: formatRelativeDate(new Date(document.createdAt)),
+  });
 
   return (
     <View style={styles.card} testID={testID}>
       <View
         style={styles.header}
         accessible
-        accessibilityLabel={`${document.title}, ${versionLabel}`}
+        accessibilityLabel={`${document.title}, ${versionLabel}, ${createdAtLabel}`}
       >
         <Text variant="subtitle" numberOfLines={1} style={styles.title} testID={`${testID}-title`}>
           {document.title}
@@ -29,6 +33,15 @@ export function DocumentListItem({ document }: Props) {
           {versionLabel}
         </Text>
       </View>
+
+      <Text
+        variant="caption"
+        color={colors.textSecondary}
+        style={styles.createdAt}
+        testID={`${testID}-created-at`}
+      >
+        {createdAtLabel}
+      </Text>
 
       <View style={styles.columns}>
         <View style={styles.column} testID={`${testID}-contributors`}>
@@ -68,11 +81,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: spacing.md,
   },
   title: {
     flexShrink: 1,
     marginRight: spacing.sm,
+  },
+  createdAt: {
+    marginBottom: spacing.md,
   },
   columns: {
     flexDirection: 'row',

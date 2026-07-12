@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react-native';
 
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
+import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 import type { Document } from '@/features/documents/types';
 
 const document: Document = {
@@ -15,6 +16,10 @@ const document: Document = {
     { id: 'user-2', name: 'Zoe Buckridge' },
   ],
 };
+
+// Computed rather than hardcoded, so this stays correct no matter what "now" is when the test
+// suite runs (formatRelativeDate's output for a fixed createdAt shifts over time).
+const expectedCreatedAtLabel = `Created ${formatRelativeDate(new Date(document.createdAt))}`;
 
 describe('DocumentListItem', () => {
   it('renders the title and version under testIDs derived from the document id', async () => {
@@ -42,6 +47,16 @@ describe('DocumentListItem', () => {
   it('exposes a combined accessibility label for the title/version header', async () => {
     await render(<DocumentListItem document={document} />);
 
-    expect(screen.getByLabelText('Hop Rod Rye, Version 2.6.16')).toBeOnTheScreen();
+    expect(
+      screen.getByLabelText(`Hop Rod Rye, Version 2.6.16, ${expectedCreatedAtLabel}`),
+    ).toBeOnTheScreen();
+  });
+
+  it('renders the created-at label using the bounded relative formatter', async () => {
+    await render(<DocumentListItem document={document} />);
+
+    expect(screen.getByTestId('document-list-item-doc-1-created-at').props.children).toBe(
+      expectedCreatedAtLabel,
+    );
   });
 });
