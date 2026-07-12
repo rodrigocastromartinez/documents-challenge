@@ -192,6 +192,11 @@ only depend on the `use*()` hook API, not on Context internals.
   `"remote"`) so the UI can optionally indicate that, and are prepended to the merged list shown
   to the user, and (for offline support) persisted to `AsyncStorage` so they survive an app
   restart.
+- **A locally-created document gets one hardcoded contributor representing the app's user**,
+  since (per §7) there's no authentication on the reference server and therefore no real session
+  to pull a name from. This is a placeholder standing in for "whoever is logged in" — the point
+  in the code where it's set (`DocumentsProvider.addLocalDocument`) is commented accordingly so
+  it reads as a deliberate stand-in, not a forgotten TODO.
 - **Local document IDs use `expo-crypto`'s `randomUUID()`**, not a hand-rolled generator.
   Hermes doesn't ship `crypto.randomUUID`, so something has to fill that gap — and ID generation
   is exactly the kind of small-surface-but-easy-to-get-subtly-wrong problem (RFC 4122 format,

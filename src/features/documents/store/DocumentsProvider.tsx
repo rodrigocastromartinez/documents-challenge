@@ -19,7 +19,16 @@ import {
   loadLocalDocuments,
   saveLocalDocuments,
 } from '@/features/documents/store/localDocumentsStorage';
-import type { Document } from '@/features/documents/types';
+import type { Contributor, Document } from '@/features/documents/types';
+import { t } from '@/shared/i18n/t';
+
+// Stands in for the authenticated user's real name/id — there's no login/session anywhere in
+// this app (the reference server has no auth), so a locally-created document always credits this
+// placeholder contributor instead of leaving the list empty.
+const CURRENT_USER_CONTRIBUTOR: Contributor = {
+  id: 'current-user',
+  name: t('documents.currentUserContributorName'),
+};
 
 export type AddLocalDocumentInput = {
   title: string;
@@ -87,7 +96,7 @@ export function DocumentsProvider({ children }: Props) {
       createdAt: now,
       updatedAt: now,
       attachments: input.attachments ?? [],
-      contributors: [],
+      contributors: [CURRENT_USER_CONTRIBUTOR],
       origin: 'local',
     };
     dispatch({ type: 'ADD_LOCAL_DOCUMENT', document });
