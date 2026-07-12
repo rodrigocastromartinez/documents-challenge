@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { Share } from 'react-native';
 
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
 import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
@@ -59,5 +60,15 @@ describe('DocumentListItem', () => {
     expect(screen.getByTestId('document-list-item-doc-1-created-at').props.children).toBe(
       expectedCreatedAtLabel,
     );
+  });
+
+  it('shares the title and version when the share button is pressed', async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    await render(<DocumentListItem document={document} />);
+
+    await fireEvent.press(screen.getByTestId('document-list-item-doc-1-share'));
+
+    expect(shareSpy).toHaveBeenCalledWith({ message: 'Hop Rod Rye — Version 2.6.16' });
+    shareSpy.mockRestore();
   });
 });

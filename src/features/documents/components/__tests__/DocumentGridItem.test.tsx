@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Share } from 'react-native';
 
 import { DocumentGridItem } from '@/features/documents/components/DocumentGridItem';
 import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
@@ -44,5 +45,15 @@ describe('DocumentGridItem', () => {
     expect(
       screen.getByLabelText(`Hop Rod Rye, Version 2.6.16, ${expectedCreatedAtLabel}`),
     ).toBeOnTheScreen();
+  });
+
+  it('shares the title and version when the share button is pressed', async () => {
+    const shareSpy = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    await render(<DocumentGridItem document={document} width={160} />);
+
+    await fireEvent.press(screen.getByTestId('document-grid-item-doc-1-share'));
+
+    expect(shareSpy).toHaveBeenCalledWith({ message: 'Hop Rod Rye — Version 2.6.16' });
+    shareSpy.mockRestore();
   });
 });

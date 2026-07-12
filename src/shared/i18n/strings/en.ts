@@ -30,6 +30,8 @@ export const en = {
   'date.yesterday': 'Yesterday',
   'common.retry': 'Retry',
   'common.loading': 'Loading',
+  'documents.share': 'Share',
+  'documents.shareMessage': '{{title}} — Version {{version}}',
   'notifications.bell': 'Notifications',
   'notifications.unreadCount': '{{count}} unread notifications',
   'notifications.created': '{{user}} created {{document}}',
