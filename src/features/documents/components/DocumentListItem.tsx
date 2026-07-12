@@ -1,5 +1,6 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import { shareDocument } from '@/features/documents/shareDocument';
 import { Text } from '@/shared/components';
 import { cardShadow, colors, spacing } from '@/shared/theme';
 import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
@@ -19,17 +20,33 @@ export function DocumentListItem({ document }: Props) {
 
   return (
     <View style={styles.card} testID={testID}>
-      <View
-        style={styles.header}
-        accessible
-        accessibilityLabel={`${document.title}, ${versionLabel}, ${createdAtLabel}`}
-      >
-        <Text variant="subtitle" numberOfLines={1} style={styles.title} testID={`${testID}-title`}>
-          {document.title}
-        </Text>
-        <Text variant="caption" color={colors.textSecondary} testID={`${testID}-version`}>
-          {versionLabel}
-        </Text>
+      <View style={styles.topRow}>
+        <View
+          style={styles.header}
+          accessible
+          accessibilityLabel={`${document.title}, ${versionLabel}, ${createdAtLabel}`}
+        >
+          <Text
+            variant="subtitle"
+            numberOfLines={1}
+            style={styles.title}
+            testID={`${testID}-title`}
+          >
+            {document.title}
+          </Text>
+          <Text variant="caption" color={colors.textSecondary} testID={`${testID}-version`}>
+            {versionLabel}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => shareDocument(document)}
+          testID={`${testID}-share`}
+          accessibilityRole="button"
+          accessibilityLabel={t('documents.share')}
+          hitSlop={8}
+        >
+          <Text style={styles.shareIcon}>📤</Text>
+        </Pressable>
       </View>
 
       <Text
@@ -76,13 +93,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     ...cardShadow,
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   header: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'baseline',
   },
   title: {
     flexShrink: 1,
     marginRight: spacing.sm,
+  },
+  shareIcon: {
+    fontSize: 16,
+    lineHeight: 16,
+    marginLeft: spacing.sm,
   },
   createdAt: {
     marginBottom: spacing.md,
