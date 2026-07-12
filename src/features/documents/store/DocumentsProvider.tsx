@@ -19,6 +19,10 @@ import {
   loadLocalDocuments,
   saveLocalDocuments,
 } from '@/features/documents/store/localDocumentsStorage';
+import {
+  loadRemoteDocumentsCache,
+  saveRemoteDocumentsCache,
+} from '@/features/documents/store/remoteDocumentsCache';
 import type { Contributor, Document } from '@/features/documents/types';
 import { t } from '@/shared/i18n/t';
 
@@ -63,7 +67,9 @@ export function DocumentsProvider({ children }: Props) {
     dispatch({ type: 'FETCH_START' });
     try {
       const documents = await getDocuments();
-      dispatch({ type: 'FETCH_SUCCESS', documents });
+      const cachedAt = new Date().toISOString();
+      dispatch({ type: 'FETCH_SUCCESS', documents, cachedAt });
+      saveRemoteDocumentsCache(documents);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       dispatch({ type: 'FETCH_ERROR', error: message });
@@ -76,12 +82,22 @@ export function DocumentsProvider({ children }: Props) {
     }
     hydrationStartedRef.current = true;
     (async () => {
-      const localDocuments = await loadLocalDocuments();
+      const [localDocuments, remoteCache] = await Promise.all([
+        loadLocalDocuments(),
+        loadRemoteDocumentsCache(),
+      ]);
       // Always dispatch, even with an empty array: this guarantees `state.documents` gets a new
       // reference right as `hasHydratedRef` flips to true, so the persist effect below reliably
       // re-runs afterwards — covering the edge case where addLocalDocument() was called while
       // hydration was still in flight (which the persist effect would otherwise have skipped).
       dispatch({ type: 'HYDRATE_LOCAL_DOCUMENTS', documents: localDocuments });
+      if (remoteCache) {
+        dispatch({
+          type: 'HYDRATE_REMOTE_CACHE',
+          documents: remoteCache.documents,
+          cachedAt: remoteCache.cachedAt,
+        });
+      }
       hasHydratedRef.current = true;
       refetch();
     })();

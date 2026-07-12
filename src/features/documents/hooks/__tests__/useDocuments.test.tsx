@@ -131,6 +131,75 @@ describe('useDocuments', () => {
     expect(JSON.parse(persisted ?? '[]')).toHaveLength(1);
   });
 
+  it('hydrates the remote cache on mount, then replaces it with fresh data once the fetch lands', async () => {
+    await AsyncStorage.setItem(
+      'documents.cache.v1',
+      JSON.stringify({ documents: [doc('cached-1')], cachedAt: '2026-07-11T10:00:00.000Z' }),
+    );
+    let resolveFetch: (documents: Document[]) => void = () => {};
+    mockedGetDocuments.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+
+    const { result } = await renderHook(() => useDocuments(), {
+      wrapper: DocumentsProvider,
+    });
+
+    await waitFor(() => {
+      expect(result.current.documents).toEqual([doc('cached-1')]);
+    });
+    expect(result.current.status).toBe('loading');
+    expect(result.current.cachedAt).toBe('2026-07-11T10:00:00.000Z');
+
+    await act(async () => {
+      resolveFetch([doc('fresh-1')]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('success');
+    });
+    expect(result.current.documents).toEqual([doc('fresh-1')]);
+  });
+
+  it('keeps showing hydrated cached documents when the fetch fails', async () => {
+    await AsyncStorage.setItem(
+      'documents.cache.v1',
+      JSON.stringify({ documents: [doc('cached-1')], cachedAt: '2026-07-11T10:00:00.000Z' }),
+    );
+    mockedGetDocuments.mockRejectedValueOnce(new Error('network down'));
+
+    const { result } = await renderHook(() => useDocuments(), {
+      wrapper: DocumentsProvider,
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('error');
+    });
+    expect(result.current.documents).toEqual([doc('cached-1')]);
+    expect(result.current.cachedAt).toBe('2026-07-11T10:00:00.000Z');
+  });
+
+  it('persists a fresh remote cache after a successful fetch', async () => {
+    mockedGetDocuments.mockResolvedValueOnce([doc('remote-1')]);
+
+    const { result } = await renderHook(() => useDocuments(), {
+      wrapper: DocumentsProvider,
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('success');
+    });
+
+    await waitFor(async () => {
+      const raw = await AsyncStorage.getItem('documents.cache.v1');
+      const cache = JSON.parse(raw ?? '{}');
+      expect(cache.documents).toEqual([doc('remote-1')]);
+      expect(typeof cache.cachedAt).toBe('string');
+    });
+  });
+
   it('preserves a locally-added document across a refetch', async () => {
     mockedGetDocuments.mockResolvedValueOnce([doc('remote-1')]);
 
