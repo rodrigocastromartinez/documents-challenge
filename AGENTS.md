@@ -128,3 +128,12 @@ require('@react-native-async-storage/async-storage/jest/async-storage-mock'))` i
   AsyncStorage (e.g. `DocumentsProvider` via `useDocuments` tests) must use
   `jest.clearAllMocks()` in its `afterEach`, not `resetAllMocks()` — `clearAllMocks` only clears
   call history and leaves implementations intact.
+- **2026-07-12 — `jest-websocket-mock` (via `mock-socket`) and `jest.useFakeTimers()` don't mix.**
+  `mock-socket` simulates the WebSocket handshake/close sequence internally via real `setTimeout`
+  calls; faking timers before those internal timers fire makes `await server.connected` (or
+  `.closed`) hang forever, even with `jest.advanceTimersByTimeAsync(...)`. This is a documented
+  limitation in the library's own README ("Known issues"), not something fixable by sequencing
+  calls differently. Don't try to test exact reconnect-backoff _timing_ through a mocked
+  WebSocket — extract the delay math into a plain, timer-free function (see
+  `computeReconnectDelay` in `NotificationsClient.ts`) and unit-test that directly; keep the
+  WebSocket-integration tests on real timers with small millisecond delays instead.
