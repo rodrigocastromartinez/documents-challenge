@@ -97,3 +97,13 @@ has not been called `` error, which is misleading if you don't already know this
   under test keeps reading the old values no matter what the test sets — with no error, just
   silently stale values. Always set/delete individual keys on the existing `process.env` object
   (see `setOrDelete` helper in `src/shared/network/__tests__/`) instead of replacing it wholesale.
+- **2026-07-11 — `RefreshControl`'s props (`refreshing`, `onRefresh`, `testID`) aren't
+  inspectable through RNTL in this jest-expo setup.** The test renderer's built-in mock renders
+  it as an empty host node that drops every prop, so `getByTestId(...).props.refreshing` etc.
+  never finds anything. Tried overriding the export (`jest.mock('react-native', () => ({
+...jest.requireActual('react-native'), RefreshControl: 'RefreshControl' }))`) to swap in a
+  plain host tag — `requireActual('react-native')` itself blows up
+  (`TurboModuleRegistry.getEnforcing(...): 'DevMenu' could not be found`) because it bypasses
+  jest-expo's own react-native mocking setup, not just the bit we wanted to override. Don't
+  fight this: verify pull-to-refresh manually/in the simulator or via the Maestro E2E flow
+  instead of asserting on `RefreshControl`'s rendered props in a unit test.

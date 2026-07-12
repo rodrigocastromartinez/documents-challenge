@@ -16,7 +16,7 @@ const doc = (id: string): Document => ({
 describe('DocumentsContent', () => {
   it('shows a loading indicator while loading with no documents yet', async () => {
     await render(
-      <DocumentsContent status="loading" documents={[]} viewMode="list" onRetry={jest.fn()} />,
+      <DocumentsContent status="loading" documents={[]} viewMode="list" onRefresh={jest.fn()} />,
     );
 
     expect(screen.getByTestId('documents-screen-loading')).toBeOnTheScreen();
@@ -25,7 +25,7 @@ describe('DocumentsContent', () => {
   it('shows an error view with retry when loading fails with no documents', async () => {
     const onRetry = jest.fn();
     await render(
-      <DocumentsContent status="error" documents={[]} viewMode="list" onRetry={onRetry} />,
+      <DocumentsContent status="error" documents={[]} viewMode="list" onRefresh={onRetry} />,
     );
 
     expect(screen.getByTestId('documents-screen-error')).toBeOnTheScreen();
@@ -35,7 +35,7 @@ describe('DocumentsContent', () => {
 
   it('shows an empty state when there are no documents', async () => {
     await render(
-      <DocumentsContent status="success" documents={[]} viewMode="list" onRetry={jest.fn()} />,
+      <DocumentsContent status="success" documents={[]} viewMode="list" onRefresh={jest.fn()} />,
     );
 
     expect(screen.getByTestId('documents-screen-empty')).toBeOnTheScreen();
@@ -47,7 +47,7 @@ describe('DocumentsContent', () => {
         status="success"
         documents={[doc('1'), doc('2')]}
         viewMode="list"
-        onRetry={jest.fn()}
+        onRefresh={jest.fn()}
       />,
     );
 
@@ -61,7 +61,7 @@ describe('DocumentsContent', () => {
         status="success"
         documents={[doc('1'), doc('2')]}
         viewMode="grid"
-        onRetry={jest.fn()}
+        onRefresh={jest.fn()}
       />,
     );
 

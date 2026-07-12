@@ -1,4 +1,4 @@
-import { FlatList, StyleSheet, useWindowDimensions } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, useWindowDimensions } from 'react-native';
 
 import { DocumentGridItem } from '@/features/documents/components/DocumentGridItem';
 import { DocumentListItem } from '@/features/documents/components/DocumentListItem';
@@ -7,6 +7,7 @@ import type { DocumentsStatus } from '@/features/documents/store/documentsReduce
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ErrorView } from '@/shared/components/ErrorView';
 import { Spinner } from '@/shared/components/Spinner';
+import { colors } from '@/shared/theme/colors';
 import { spacing } from '@/shared/theme/spacing';
 import { t } from '@/shared/i18n/t';
 import type { Document } from '@/features/documents/types';
@@ -17,10 +18,10 @@ type Props = {
   status: DocumentsStatus;
   documents: Document[];
   viewMode: ViewMode;
-  onRetry: () => void;
+  onRefresh: () => void;
 };
 
-export function DocumentsContent({ status, documents, viewMode, onRetry }: Props) {
+export function DocumentsContent({ status, documents, viewMode, onRefresh }: Props) {
   const gridItemWidth = useGridItemWidth();
 
   if (status === 'loading' && documents.length === 0) {
@@ -32,7 +33,7 @@ export function DocumentsContent({ status, documents, viewMode, onRetry }: Props
       <ErrorView
         testID="documents-screen-error"
         message={t('documents.loadError')}
-        onRetry={onRetry}
+        onRetry={onRefresh}
       />
     );
   }
@@ -61,6 +62,15 @@ export function DocumentsContent({ status, documents, viewMode, onRetry }: Props
         ) : (
           <DocumentListItem document={item} />
         )
+      }
+      refreshControl={
+        <RefreshControl
+          testID="documents-screen-refresh-control"
+          refreshing={status === 'loading'}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
       }
     />
   );
