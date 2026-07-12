@@ -122,6 +122,9 @@ describe('useDocuments', () => {
     });
     expect(result.current.documents[0]?.origin).toBe('local');
     expect(result.current.documents[0]?.id).toBe('mock-uuid');
+    expect(result.current.documents[0]?.contributors).toEqual([
+      { id: 'current-user', name: 'You' },
+    ]);
     expect(result.current.documents).toHaveLength(2);
 
     const persisted = await AsyncStorage.getItem('documents.local.v1');

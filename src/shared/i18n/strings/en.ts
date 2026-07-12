@@ -22,6 +22,7 @@ export const en = {
   'documents.addDocumentSheet.fileLabel': 'File',
   'documents.addDocumentSheet.chooseFile': '📄 Choose file',
   'documents.addDocumentSheet.submit': 'Submit',
+  'documents.currentUserContributorName': 'You',
   'date.justNow': 'Just now',
   'date.minuteAgo': '{{count}} minute ago',
   'date.minutesAgo': '{{count}} minutes ago',
