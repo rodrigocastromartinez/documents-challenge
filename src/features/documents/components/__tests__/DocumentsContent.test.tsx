@@ -11,6 +11,7 @@ const doc = (id: string): Document => ({
   updatedAt: '2026-07-01T10:00:00.000Z',
   attachments: [],
   contributors: [],
+  origin: 'remote',
 });
 
 describe('DocumentsContent', () => {

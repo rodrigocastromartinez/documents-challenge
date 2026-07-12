@@ -15,6 +15,7 @@ const document: Document = {
     { id: 'user-1', name: 'Carlie Abott' },
     { id: 'user-2', name: 'Zoe Buckridge' },
   ],
+  origin: 'remote',
 };
 
 // Computed rather than hardcoded, so this stays correct no matter what "now" is when the test

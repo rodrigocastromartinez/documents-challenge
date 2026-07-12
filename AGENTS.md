@@ -107,3 +107,24 @@ has not been called `` error, which is misleading if you don't already know this
   jest-expo's own react-native mocking setup, not just the bit we wanted to override. Don't
   fight this: verify pull-to-refresh manually/in the simulator or via the Maestro E2E flow
   instead of asserting on `RefreshControl`'s rendered props in a unit test.
+- **2026-07-12 — `StyleSheet.absoluteFillObject` doesn't exist on this RN version's types**
+  (`StyleSheet.absoluteFill` does, but that's a style _ID_ meant to go directly in a `style`
+  prop/array, not a plain object you can spread into `StyleSheet.create({...})`). Hit this twice
+  (`ViewToggle`, `AddDocumentSheet`) before writing it down. Just spell out
+  `{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }` instead of reaching for either.
+- **2026-07-12 — `@react-native-async-storage/async-storage`'s official jest mock
+  (`.../jest/async-storage-mock`) doesn't self-register.** It only exports a mock object; adding
+  its path directly to jest's `setupFiles` (as if it were a script to run) does nothing — the
+  real native module still loads and throws `NativeModule: AsyncStorage is null`. It has to be
+  wired up explicitly via `jest.mock('@react-native-async-storage/async-storage', () =>
+require('@react-native-async-storage/async-storage/jest/async-storage-mock'))` inside a file
+  that setupFiles actually runs (see `jest.setup.js`) — `jest.mock` calls are hoisted/global
+  regardless of which file they're in, but merely requiring the module is not enough.
+- **2026-07-12 — `jest.resetAllMocks()` silently destroys AsyncStorage's mock implementation
+  for the rest of the test run, not just the current file.** The official mock wraps its
+  methods in `jest.fn(realImplementation)`; `resetAllMocks`/`.mockReset()` strips the
+  implementation (unlike `jest.spyOn`, there's no original to fall back to), leaving `getItem`/
+  `setItem` returning `undefined` forever after. Any test file that renders something touching
+  AsyncStorage (e.g. `DocumentsProvider` via `useDocuments` tests) must use
+  `jest.clearAllMocks()` in its `afterEach`, not `resetAllMocks()` — `clearAllMocks` only clears
+  call history and leaves implementations intact.

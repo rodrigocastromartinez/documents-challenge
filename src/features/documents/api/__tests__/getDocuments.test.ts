@@ -35,6 +35,7 @@ describe('getDocuments', () => {
         updatedAt: '2026-07-02T10:00:00.000Z',
         attachments: ['Light Lager', 'Porter'],
         contributors: [{ id: 'user-1', name: 'Carlie Abott' }],
+        origin: 'remote',
       },
     ]);
   });

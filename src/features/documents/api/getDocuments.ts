@@ -28,6 +28,7 @@ function mapDocument(raw: RawDocument): Document {
       id: contributor.ID,
       name: contributor.Name,
     })),
+    origin: 'remote',
   };
 }
 

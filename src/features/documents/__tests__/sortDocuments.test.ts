@@ -9,6 +9,7 @@ const doc = (id: string, title: string, createdAt: string): Document => ({
   updatedAt: createdAt,
   attachments: [],
   contributors: [],
+  origin: 'remote',
 });
 
 // Deliberately diverging title/date order, so a test asserting the wrong sort key would fail

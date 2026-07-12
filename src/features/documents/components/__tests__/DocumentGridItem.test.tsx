@@ -12,6 +12,7 @@ const document: Document = {
   updatedAt: '2026-07-01T10:00:00.000Z',
   attachments: ['Light Lager'],
   contributors: [{ id: 'user-1', name: 'Carlie Abott' }],
+  origin: 'remote',
 };
 
 // Computed rather than hardcoded, so this stays correct no matter what "now" is when the test

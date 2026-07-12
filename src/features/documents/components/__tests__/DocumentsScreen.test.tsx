@@ -16,11 +16,15 @@ const doc = (id: string, title: string, createdAt = '2026-07-01T10:00:00.000Z'):
   updatedAt: createdAt,
   attachments: [],
   contributors: [],
+  origin: 'remote',
 });
 
 describe('DocumentsScreen', () => {
   afterEach(() => {
-    jest.resetAllMocks();
+    // clearAllMocks, not resetAllMocks: see AGENTS.md gotchas log — resetAllMocks strips a
+    // jest.fn(impl)'s implementation permanently, which would break AsyncStorage's mock for the
+    // rest of the run if this file ever renders something touching it.
+    jest.clearAllMocks();
   });
 
   it('renders the title and the documents list in list view by default', async () => {
@@ -28,6 +32,7 @@ describe('DocumentsScreen', () => {
       status: 'success',
       documents: [doc('1', 'Hop Rod Rye')],
       refetch: jest.fn(),
+      addLocalDocument: jest.fn(),
     });
 
     await render(<DocumentsScreen />);
@@ -41,6 +46,7 @@ describe('DocumentsScreen', () => {
       status: 'success',
       documents: [doc('1', 'Hop Rod Rye')],
       refetch: jest.fn(),
+      addLocalDocument: jest.fn(),
     });
 
     await render(<DocumentsScreen />);
@@ -59,6 +65,7 @@ describe('DocumentsScreen', () => {
         doc('b', 'Zeta', '2026-01-01T00:00:00.000Z'),
       ],
       refetch: jest.fn(),
+      addLocalDocument: jest.fn(),
     });
 
     await render(<DocumentsScreen />);
@@ -82,11 +89,41 @@ describe('DocumentsScreen', () => {
       documents: [],
       error: 'network down',
       refetch,
+      addLocalDocument: jest.fn(),
     });
 
     await render(<DocumentsScreen />);
 
     await fireEvent.press(screen.getByTestId('documents-screen-error-retry'));
     expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the add-document sheet, submits it, and closes it again', async () => {
+    const addLocalDocument = jest.fn();
+    mockedUseDocuments.mockReturnValue({
+      status: 'success',
+      documents: [doc('1', 'Hop Rod Rye')],
+      refetch: jest.fn(),
+      addLocalDocument,
+    });
+
+    await render(<DocumentsScreen />);
+
+    expect(screen.queryByTestId('add-document-sheet-name-input')).toBeNull();
+
+    await fireEvent.press(screen.getByTestId('documents-screen-add-button'));
+    expect(screen.getByTestId('add-document-sheet-name-input')).toBeOnTheScreen();
+
+    await fireEvent.changeText(screen.getByTestId('add-document-sheet-name-input'), 'New doc');
+    await fireEvent.changeText(screen.getByTestId('add-document-sheet-version-input'), '1.0.0');
+    await fireEvent.press(screen.getByTestId('add-document-sheet-choose-file'));
+    await fireEvent.press(screen.getByTestId('add-document-sheet-submit'));
+
+    expect(addLocalDocument).toHaveBeenCalledWith({
+      title: 'New doc',
+      version: '1.0.0',
+      attachments: ['document.pdf'],
+    });
+    expect(screen.queryByTestId('add-document-sheet-name-input')).toBeNull();
   });
 });
