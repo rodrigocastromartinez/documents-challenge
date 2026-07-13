@@ -60,7 +60,14 @@ export function DocumentListItem({ document }: Props) {
 
       <View style={styles.columns}>
         <View style={styles.column} testID={`${testID}-contributors`}>
-          <Text variant="caption" color={colors.text} style={styles.columnHeader}>
+          <Text
+            variant="caption"
+            color={colors.text}
+            style={styles.columnHeader}
+            // Without this, screen readers announce the decorative emoji ("busts in
+            // silhouette") before the actual section name.
+            accessibilityLabel={t('documents.contributors')}
+          >
             👥 {t('documents.contributors')}
           </Text>
           {document.contributors.map((contributor) => (
@@ -71,7 +78,12 @@ export function DocumentListItem({ document }: Props) {
         </View>
 
         <View style={styles.column} testID={`${testID}-attachments`}>
-          <Text variant="caption" color={colors.text} style={styles.columnHeader}>
+          <Text
+            variant="caption"
+            color={colors.text}
+            style={styles.columnHeader}
+            accessibilityLabel={t('documents.attachments')}
+          >
             🔗 {t('documents.attachments')}
           </Text>
           {document.attachments.map((attachment, index) => (

@@ -102,6 +102,9 @@ export function AddDocumentSheet({ visible, onClose, onSubmit }: Props) {
             placeholder={t('documents.addDocumentSheet.namePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             accessibilityLabel={t('documents.addDocumentSheet.nameLabel')}
+            autoCapitalize="sentences"
+            returnKeyType="next"
+            maxLength={120}
             style={styles.input}
           />
 
@@ -115,6 +118,10 @@ export function AddDocumentSheet({ visible, onClose, onSubmit }: Props) {
             placeholder={t('documents.addDocumentSheet.versionPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             accessibilityLabel={t('documents.addDocumentSheet.versionLabel')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="done"
+            maxLength={30}
             style={styles.input}
           />
 
