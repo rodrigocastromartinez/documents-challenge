@@ -124,6 +124,7 @@ src/
 │  └─ notifications/
 │     ├─ socket/
 │     │  └─ NotificationsClient.ts   WebSocket wrapper: connect / reconnect / teardown
+│     ├─ localNotifications.ts        expo-notifications wrapper (request perms, present)
 │     ├─ store/
 │     │  ├─ notificationsReducer.ts  feed + unread count
 │     │  └─ NotificationsProvider.tsx
@@ -138,7 +139,7 @@ src/
 │  ├─ utils/           formatRelativeDate.ts, id.ts
 │  ├─ network/         httpClient.ts, resolveApiBaseUrl.ts
 │  ├─ i18n/             t.ts + strings/en.ts (see §3.9)
-│  └─ hooks/           useAppState.ts   foreground/background, for notifications
+│  └─ hooks/           useIsOnline.ts   connectivity, for the offline banner
 └─ __tests__/          or *.test.ts colocated next to the unit under test
 ```
 
@@ -220,8 +221,28 @@ only depend on the `use*()` hook API, not on Context internals.
   see the "not merged with documents" reasoning below), tears the client down on unmount.
 - UI: `NotificationBell` (header icon + unread badge) and `NotificationBanner` (an in-app
   toast — "X created document Y" — that auto-dismisses after a few seconds or on manual
-  dismiss). If the optional "local notifications" feature is implemented, the same message
-  pipeline triggers an `expo-notifications` local notification when the app is backgrounded.
+  dismiss).
+- **Local notifications (optional feature, implemented)**: the same WebSocket message pipeline
+  triggers an `expo-notifications` local notification (`localNotifications.ts`) whenever a
+  message arrives while the app is backgrounded — foregrounded arrivals only show the in-app
+  banner, not a system notification too, since that would be a redundant/noisy double-signal for
+  the same event. Design decisions that came out of actually watching it run:
+  - **A fixed notification `identifier`**, so each new message replaces the previous system
+    notification instead of piling up — the server emits every 0-5s, so without this the
+    notification center accumulates dozens of entries in a minute. One "latest" notification
+    mirrors the in-app state (a single `latestMessage`, no feed/history).
+  - **Delivered notifications are dismissed when the app returns to the foreground** — once the
+    user is looking at the app, the bell/banner tell the story; a stale system notification on
+    top of that is noise.
+  - **Backgrounded-ness is read from `AppState.currentState` at message-arrival time** (kept in
+    sync natively by RN), not through a state hook — the socket's `onMessage` callback is
+    created once and must not be recreated per foreground/background transition, and
+    subscribing through render state would also re-render the whole provider subtree on every
+    transition for a value only a callback needs.
+  - **Android notification channel** (`setNotificationChannelAsync`) is registered up front —
+    required on Android 8+ for notifications to display at all; a no-op on iOS.
+    Confirmed against the versioned Expo docs (SDK 57) that local (non-push) notifications work
+    in Expo Go without a development build — only remote/push notifications need one.
 - **The bell glyph is a `.webp` image asset (`features/notifications/assets/bell.webp`),
   tinted via `Image`'s `tintColor` style, not a vector icon library.** `react-native-svg` was
   tried first, but pulling in a full SVG-rendering library for a single static icon isn't
@@ -487,6 +508,7 @@ commit often."
 
 - Reviewer will run the reference Go server locally (`go run server.go`) alongside the app;
   this will be spelled out in the final README's setup instructions.
-- Primary development/testing target: iOS Simulator. Android should still work given no
-  iOS-specific APIs are used, but will get less manual verification.
+- The app targets both iOS and Android. No platform-specific APIs are used without a
+  `Platform`-appropriate counterpart (e.g. `LayoutAnimation`'s Android opt-in, shadows via
+  `elevation`, the Android notification channel, `10.0.2.2` as the emulator host).
 - No authentication exists on the reference server, so none is implemented client-side.

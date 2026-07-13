@@ -39,4 +39,6 @@ export const en = {
   'notifications.unreadCount': '{{count}} unread notifications',
   'notifications.created': '{{user}} created {{document}}',
   'notifications.dismiss': 'Dismiss',
+  'notifications.localTitle': 'New document',
+  'notifications.channelName': 'Document activity',
 } as const;
