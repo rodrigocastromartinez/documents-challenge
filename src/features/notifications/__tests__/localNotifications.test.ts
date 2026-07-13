@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 
 import {
   dismissLocalNotifications,
@@ -72,5 +73,44 @@ describe('localNotifications', () => {
     mockedDismissAll.mockRejectedValueOnce(new Error('boom'));
 
     await expect(dismissLocalNotifications()).resolves.toBeUndefined();
+  });
+});
+
+describe('on Android inside Expo Go', () => {
+  // expo-notifications' own push-token side effect throws unconditionally as soon as the real
+  // module is imported in this exact combination (see the comment at the top of
+  // localNotifications.ts) — this reproduces that combination via a fresh module registry and
+  // asserts the module degrades to safe no-ops instead of crashing on import.
+  const originalPlatformOS = Platform.OS;
+
+  afterEach(() => {
+    Platform.OS = originalPlatformOS;
+    jest.dontMock('expo');
+    jest.resetModules();
+  });
+
+  it('loads without throwing, and every export becomes a safe no-op', async () => {
+    jest.resetModules();
+    jest.doMock('expo', () => ({ isRunningInExpoGo: () => true }));
+    Platform.OS = 'android';
+
+    // Needs a fresh module registry after jest.resetModules() above, which a static import can't give.
+    type LocalNotificationsModule = typeof import('@/features/notifications/localNotifications');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const androidExpoGoModule: LocalNotificationsModule = require('@/features/notifications/localNotifications');
+
+    await expect(
+      androidExpoGoModule.requestLocalNotificationPermissions(),
+    ).resolves.toBeUndefined();
+    await expect(
+      androidExpoGoModule.presentLocalNotification({
+        timestamp: '2026-07-12T10:00:00.000Z',
+        userId: 'user-1',
+        userName: 'Ada Lovelace',
+        documentId: 'doc-1',
+        documentTitle: 'Analytical Engine Notes',
+      }),
+    ).resolves.toBeUndefined();
+    await expect(androidExpoGoModule.dismissLocalNotifications()).resolves.toBeUndefined();
   });
 });

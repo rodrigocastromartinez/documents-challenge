@@ -241,8 +241,17 @@ only depend on the `use*()` hook API, not on Context internals.
     transition for a value only a callback needs.
   - **Android notification channel** (`setNotificationChannelAsync`) is registered up front —
     required on Android 8+ for notifications to display at all; a no-op on iOS.
-    Confirmed against the versioned Expo docs (SDK 57) that local (non-push) notifications work
-    in Expo Go without a development build — only remote/push notifications need one.
+  - **`expo-notifications` is loaded via a guarded `require()`, not a static `import`, and
+    skipped entirely on Android when running inside Expo Go.** The versioned Expo docs (SDK 57)
+    say local (non-push) notifications work in Expo Go without a development build, and that's
+    true on iOS — but verified on a real Android Studio emulator, just _importing_ the package
+    crashes the app on launch in that combination: it registers a push-token listener at module
+    load time regardless of whether push is ever used, and that listener unconditionally throws
+    on Android inside Expo Go (vs. only a `console.warn` elsewhere). See AGENTS.md for the full
+    trace. Since a static import always executes regardless of any runtime check inside it, the
+    only fix is to never let the real module load in that one combination — local notifications
+    are then silently unavailable there, while everything else (including local notifications on
+    a real Android build, dev or production) keeps working.
 - **The bell glyph is a `.webp` image asset (`features/notifications/assets/bell.webp`),
   tinted via `Image`'s `tintColor` style, not a vector icon library.** `react-native-svg` was
   tried first, but pulling in a full SVG-rendering library for a single static icon isn't

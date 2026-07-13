@@ -183,3 +183,21 @@ require('@react-native-async-storage/async-storage/jest/async-storage-mock'))` i
   wiring an `appStateRef` in `NotificationsProvider`; that ref was later removed entirely in
   favor of reading `AppState.currentState` directly at callback-fire time (RN keeps it in sync
   natively) — often the state-plus-ref bridge isn't needed at all, which is the better fix.
+- **2026-07-13 — `expo-notifications` doesn't just _warn_ on Android inside Expo Go, it _throws_
+  and crashes the app on launch — the entry above (logged from the iOS/Jest side) undersold
+  this.** Confirmed on a real Android Studio emulator (a different machine, cloned fresh):
+  `[runtime not ready]: Error: expo-notifications: Android Push notifications... was removed
+from Expo Go`. The throw comes from `warnOfExpoGoPushUsage()` inside the package's own
+  `DevicePushTokenAutoRegistration.fx.ts`, a side-effect-only module that calls
+  `addPushTokenListener` unconditionally as soon as `expo-notifications` is imported —
+  before any of our code runs, and regardless of only ever using LOCAL (non-push)
+  notifications. `Platform.OS === 'android'` → hard `throw`; every other platform → `console.warn`
+  only. This is asymmetric behavior baked into the library itself, not something a try/catch
+  around our own calls can fix, since the crash happens at `import` time. Fixed in
+  `localNotifications.ts` by resolving `Platform.OS === 'android' && isRunningInExpoGo()`
+  (the same check the library uses internally, exported from the `expo` package) and only
+  `require()`-ing `expo-notifications` when that combination isn't true — a static
+  `import` would always execute regardless of any runtime guard, since ES imports are hoisted.
+  Local notifications are silently unavailable in that one combination (Android + Expo Go);
+  a real Android build (dev or production) is unaffected, and iOS/Expo Go keeps working exactly
+  as before.
