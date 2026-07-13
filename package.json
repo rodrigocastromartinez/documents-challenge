@@ -36,7 +36,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "cross-env TZ=UTC jest",
-    "test:watch": "cross-env TZ=UTC jest --watch"
+    "test:watch": "cross-env TZ=UTC jest --watch",
+    "e2e": "maestro test e2e/flows/golden-path.yaml"
   },
   "private": true,
   "jest": {

@@ -1,0 +1,142 @@
+# Golden-path E2E flow (see TECH-PLAN.md §5): launch the app, see the documents list, switch to
+# grid view, change sort order, create a document via the modal, see it appear at the top of the
+# list, and observe an in-app notification. Runs against Expo Go (not a standalone build) via a
+# deep link into the running dev server — see e2e/README.md for prerequisites and how to run it.
+appId: host.exp.Exponent
+---
+# clearState wipes Expo Go's sandboxed storage — including this app's AsyncStorage — so every
+# run starts from identical conditions instead of accumulating the local document each previous
+# run created. Cleaning at launch rather than at the end of the flow means even an aborted run
+# can't leak state into the next one.
+- launchApp:
+    clearState: true
+- openLink: 'exp://localhost:8081'
+
+# clearState above also resets Expo Go's own "you've seen the developer menu intro" flag, so its
+# one-time intro sheet reappears over the app on every run (as it also would on a genuinely
+# fresh Expo Go install, i.e. most reviewers' first run). Dismissing it takes TWO taps —
+# "Continue" doesn't close the sheet, it advances it into the full developer menu, whose "Close"
+# (X) button is what actually dismisses it. Both taps are optional so the sequence no-ops if the
+# sheet isn't showing. The final wait doubles as the dismissal check: while any sheet is up, iOS
+# hides the hierarchy behind it from the accessibility tree Maestro reads, so the screen title
+# only becomes assertable once the overlay is really gone (extendedWaitUntil rather than a bare
+# assert, because the dismiss animation takes a moment to re-expose that hierarchy — a plain
+# assert fails faster than that and would burn through every retry prematurely).
+- extendedWaitUntil:
+    visible:
+      text: 'Continue'
+    timeout: 15000
+    optional: true
+- waitForAnimationToEnd
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          text: 'Continue'
+          optional: true
+      - tapOn:
+          text: 'Close'
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: 'documents-screen-title'
+          timeout: 10000
+# Documents list loads from the live reference server. Generous timeout: clearState also wiped
+# the remote-documents cache and Expo Go's downloaded JS bundle, so this first render pays for a
+# bundle re-download plus a cold fetch, unlike an ordinary warm start.
+- extendedWaitUntil:
+    visible:
+      id: 'document-list-item-.*'
+    timeout: 15000
+
+# Switch to grid view and back — both render the same underlying data. Every mode/sort change
+# below runs through LayoutAnimation (see TECH-PLAN.md §7 for its known Android/Fabric gap), and
+# on top of that this app re-renders every few seconds from the live WebSocket feed regardless of
+# what's being tapped. Both can occasionally eat a tap or land it mid-transition, and — because
+# something in the UI is almost always changing anyway (the notification banner/badge) —
+# `retryTapIfNoChange` doesn't reliably catch it here: it sees *some* hierarchy change and
+# concludes the tap worked, even when the specific thing the tap was meant to do didn't happen.
+# `retry:` around tap + assert is the fix — it retries the pair as a unit based on whether the
+# *intended* outcome actually happened, not on whether anything changed at all.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: 'view-toggle-grid'
+      - waitForAnimationToEnd
+      - assertVisible:
+          id: 'document-grid-item-.*'
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: 'view-toggle-list'
+      - waitForAnimationToEnd
+      - assertVisible:
+          id: 'document-list-item-.*'
+
+# Change sort order to Title, then back to Date — the rest of the flow relies on Date order
+# (newest first) to assert the new document lands at the top without scrolling; Title order
+# would place it alphabetically instead, wherever that happens to fall. Each block retries the
+# whole open-menu → pick-option sequence, and its last step asserts the trigger's accessibility
+# label ("Sort by: <option>") — the one signal that the selection actually applied, since the
+# menu closes identically whether the option tap landed or got eaten by the dismiss backdrop.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: 'sort-by-select-trigger'
+      - assertVisible:
+          id: 'sort-by-select-option-title'
+      - tapOn:
+          id: 'sort-by-select-option-title'
+      - extendedWaitUntil:
+          visible:
+            text: 'Sort by: Title'
+          timeout: 5000
+- waitForAnimationToEnd
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: 'sort-by-select-trigger'
+      - assertVisible:
+          id: 'sort-by-select-option-date'
+      - tapOn:
+          id: 'sort-by-select-option-date'
+      - extendedWaitUntil:
+          visible:
+            text: 'Sort by: Date'
+          timeout: 5000
+- waitForAnimationToEnd
+
+# Create a document via the Add document sheet.
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: 'documents-screen-add-button'
+      - assertVisible:
+          id: 'add-document-sheet-name-input'
+- tapOn:
+    id: 'add-document-sheet-name-input'
+- inputText: 'Maestro E2E Test Document'
+- tapOn:
+    id: 'add-document-sheet-version-input'
+- inputText: '9.9.9'
+- tapOn:
+    id: 'add-document-sheet-choose-file'
+- tapOn:
+    id: 'add-document-sheet-submit'
+- waitForAnimationToEnd
+
+# The new document is client-only (see TECH-PLAN.md §1 — no create endpoint on the reference
+# server) and is prepended to the list, so it's the first thing rendered.
+- assertVisible: 'Maestro E2E Test Document'
+
+# The reference server's WebSocket emits a notification every 0-5s (see TECH-PLAN.md §1);
+# a generous timeout keeps this from being flaky without waiting indefinitely.
+- extendedWaitUntil:
+    visible:
+      id: 'notification-banner'
+    timeout: 20000

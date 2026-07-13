@@ -473,11 +473,42 @@ changes), any ORM/DB (disallowed by the challenge).
   over `getByText` for structural assertions (element present, correct section, event fired);
   `getByText`/`getByLabelText` are still the right tool when the thing actually under test is
   the rendered copy or the accessibility tree itself (see §3.1).
-- **E2E (committed deliverable)**: Maestro flows covering the golden path — launch app, see the
-  documents list, switch to grid view, change sort order, create a document via the modal, see
-  it appear at the top of the list, and receive/observe an in-app notification. This is planned
-  in from the start (not a stretch goal), since it's high-signal for reviewers and exercises the
-  real app end-to-end rather than mocked units.
+- **E2E (committed deliverable)**: `e2e/flows/golden-path.yaml` (Maestro) — launch app, see the
+  documents list, switch to grid view and back, change sort order, create a document via the
+  modal, see it appear at the top of the list, and observe an in-app notification. Committed
+  from the start (not a stretch goal), since it's high-signal for reviewers and exercises the
+  real app end-to-end against the live reference server, not mocked units. Runs inside Expo Go
+  via a deep link (`openLink: exp://localhost:8081`), not a standalone build — see
+  `e2e/README.md` for the full reasoning and how to run it. Two things worth calling out about
+  the flow itself:
+  - **Sort order is switched back to Date before creating the document.** The flow tries Title
+    order too (to exercise `SortBySelect`), but asserting the new document "appears at the top"
+    only holds under Date order — under Title order it sorts alphabetically instead, which for
+    "Maestro E2E Test Document" would land it off-screen, not at the top.
+  - **Every tap that toggles state which the flow depends on is wrapped in a `retry:` block**
+    (tap + its assertion together, `maxRetries: 3`), not the seemingly-obvious
+    `retryTapIfNoChange`. A tap can occasionally register as a no-op if its target
+    unmounts/re-renders as part of the same native touch gesture that triggered it (observed
+    with `SortBySelect`'s trigger + its full-screen dismiss backdrop, both mounted/interacted
+    with in one state update). `retryTapIfNoChange` looks like the fix but isn't reliable here:
+    it retries based on _any_ hierarchy change, and this app's live WebSocket feed changes the
+    notification banner/badge every few seconds regardless of what's being tapped, which reads
+    as "the tap worked" even when it didn't. `retry:` around the tap + assertion retries based
+    on whether the intended outcome actually happened instead — see AGENTS.md for the full
+    investigation (including the failed first attempt).
+  - **Runs are state-isolated**: the flow launches with `clearState: true`, wiping the app's
+    AsyncStorage so repeated runs start from identical conditions instead of accumulating the
+    local document each run creates. Cleanup-at-launch (not at flow end) means an aborted run
+    can't leak state into the next one. See `e2e/README.md` for the Expo Go quirks this
+    surfaced (its one-time intro overlay reappears every run and needs a two-tap dismissal).
+  - **Deliberately not a CI gate**: the E2E flow is a local pre-release check, not part of the
+    GitHub Actions pipeline. Main reason: CI would need to clone and run the reference server,
+    whose repository URL contains the company name this challenge asks not to mention anywhere
+    in the project. Beyond that, simulator infrastructure in CI (macOS runners or scripted
+    Android emulators + Expo Go installation) is far more pipeline than this project's size
+    justifies, and the flow's dependence on live randomized data/WebSocket timing — its whole
+    value as an E2E check — is exactly what makes it noisy as a merge gate. Full reasoning in
+    `e2e/README.md`.
 
 ## 6. Implementation backlog (small, independently committable steps)
 

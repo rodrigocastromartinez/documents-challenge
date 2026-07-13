@@ -201,3 +201,42 @@ from Expo Go`. The throw comes from `warnOfExpoGoPushUsage()` inside the package
   Local notifications are silently unavailable in that one combination (Android + Expo Go);
   a real Android build (dev or production) is unaffected, and iOS/Expo Go keeps working exactly
   as before.
+- **2026-07-14 — a Maestro `tapOn` that toggles UI state (opening a dropdown, switching
+  list/grid) can occasionally register as "no visible change" and the flow fails as if the tap
+  never landed — even though the exact same flow passes on the next run.** Root cause: tapping
+  `SortBySelect`'s trigger opens the dropdown and its full-screen dismiss backdrop in the same
+  state update, and if the native touch's up-event gets captured by that freshly-mounted
+  backdrop instead of the trigger, the dropdown opens and immediately closes within the same
+  gesture — net zero change from the tap's own doing.
+  **First fix tried, and why it didn't hold up**: `retryTapIfNoChange: true` on every affected
+  `tapOn`, which re-taps if Maestro's before/after hierarchy diff comes back empty. This helped
+  but didn't eliminate the flake (still failed roughly 1 run in 4) — because this app's live
+  WebSocket feed re-renders the notification banner/badge every few seconds regardless of what's
+  being tapped, so the hierarchy is nearly always changing _somehow_. `retryTapIfNoChange` reads
+  that unrelated churn as "the tap had an effect" and never actually retries the failed one.
+  **The fix that held (5/5 clean runs after switching)**: wrap each flaky tap + its assertion in
+  a `retry:` block (`maxRetries: 3`) instead — this retries based on whether the _specific_
+  intended outcome (the assertion) actually happened, completely independent of what else in the
+  hierarchy did or didn't change. See `e2e/flows/golden-path.yaml`. General lesson for this app:
+  any Maestro flow here should assume the hierarchy is never quiescent, and prefer outcome-based
+  retry (`retry:`) over change-based retry (`retryTapIfNoChange`) for interactions that must
+  actually succeed.
+  **Corollary found later the same way**: the dropdown's _option_ tap has the same race (the
+  menu closes identically whether the option landed or the dismiss backdrop ate the tap), so
+  "the menu closed" proves nothing. The only reliable outcome signal is `SortBySelect`'s
+  trigger accessibility label, which embeds the current value ("Sort by: Date" / "Sort by:
+  Title") — the flow asserts on that after picking an option. When adding outcome-based retries,
+  make sure the assert targets something that can only be true if the interaction actually
+  applied, not something that also happens on the failure path.
+- **2026-07-14 — Maestro + Expo Go: `launchApp: { clearState: true }` re-triggers Expo Go's
+  one-time developer-menu intro overlay on every run, and dismissing it takes TWO taps, not
+  one.** clearState wipes Expo Go's own storage along with the app's (which is the point — it's
+  what isolates E2E runs from each other and from manually-created dev data), including the
+  "already saw the intro" flag. The intro sheet's "Continue" button does NOT close it — it
+  advances into the full developer menu, whose "Close" (X) button is the actual dismissal. Two
+  more traps found while wiring this up: (a) while any sheet is presented, iOS hides the app
+  hierarchy behind it from the accessibility tree, so asserting on the app's own testIDs doubles
+  as a "sheet is really gone" check — but use `extendedWaitUntil`, not a bare `assertVisible`,
+  because the dismiss animation takes longer than a bare assert's patience and burns the retries;
+  (b) the first post-clearState render pays for an Expo Go bundle re-download plus a cold fetch,
+  so the first list assertion needs a generous timeout (15s) that a warm start wouldn't.
