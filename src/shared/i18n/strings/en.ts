@@ -5,6 +5,7 @@ export const en = {
   'documents.attachments': 'Attachments',
   'documents.loadError': 'Something went wrong loading your documents.',
   'documents.empty': 'No documents yet',
+  'documents.emptyDescription': 'Pull down to refresh, or add your first document below.',
   'documents.createdAt': 'Created {{date}}',
   'documents.viewMode.list': 'Switch to list view',
   'documents.viewMode.grid': 'Switch to grid view',

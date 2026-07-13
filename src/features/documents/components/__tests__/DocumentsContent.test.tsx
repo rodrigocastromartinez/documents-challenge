@@ -34,12 +34,13 @@ describe('DocumentsContent', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('shows an empty state when there are no documents', async () => {
+  it('shows an empty state inside the list, keeping pull-to-refresh available', async () => {
     await render(
       <DocumentsContent status="success" documents={[]} viewMode="list" onRefresh={jest.fn()} />,
     );
 
     expect(screen.getByTestId('documents-screen-empty')).toBeOnTheScreen();
+    expect(screen.getByTestId('documents-screen-list')).toBeOnTheScreen();
   });
 
   it('renders list items when viewMode is "list"', async () => {

@@ -35,10 +35,6 @@ export function DocumentsContent({ status, documents, viewMode, onRefresh }: Pro
     );
   }
 
-  if (documents.length === 0) {
-    return <EmptyState testID="documents-screen-empty" title={t('documents.empty')} />;
-  }
-
   const isGrid = viewMode === 'grid';
 
   return (
@@ -49,7 +45,7 @@ export function DocumentsContent({ status, documents, viewMode, onRefresh }: Pro
       testID="documents-screen-list"
       style={styles.list}
       contentContainerStyle={styles.listContent}
-      columnWrapperStyle={isGrid ? styles.columnWrapper : undefined}
+      columnWrapperStyle={isGrid && documents.length > 0 ? styles.columnWrapper : undefined}
       numColumns={isGrid ? GRID_COLUMNS : 1}
       data={documents}
       keyExtractor={(item) => item.id}
@@ -59,6 +55,16 @@ export function DocumentsContent({ status, documents, viewMode, onRefresh }: Pro
         ) : (
           <DocumentListItem document={item} />
         )
+      }
+      // Rendering the empty state inside the list (rather than returning early) keeps
+      // pull-to-refresh available when there's nothing to show — otherwise an empty result
+      // would leave no way to recover except restarting the app.
+      ListEmptyComponent={
+        <EmptyState
+          testID="documents-screen-empty"
+          title={t('documents.empty')}
+          description={t('documents.emptyDescription')}
+        />
       }
       refreshControl={
         <RefreshControl
@@ -87,6 +93,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+    // Lets ListEmptyComponent's flex:1 center itself vertically in the available space.
+    flexGrow: 1,
   },
   columnWrapper: {
     gap: spacing.md,

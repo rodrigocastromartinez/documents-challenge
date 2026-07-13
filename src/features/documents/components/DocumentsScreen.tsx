@@ -57,7 +57,7 @@ export function DocumentsScreen() {
       testID="documents-screen"
     >
       <View style={styles.header}>
-        <Text variant="title" testID="documents-screen-title">
+        <Text variant="title" testID="documents-screen-title" accessibilityRole="header">
           {t('documents.title')}
         </Text>
         <NotificationBell
