@@ -20,6 +20,8 @@ import { t } from '@/shared/i18n/t';
 // this field becomes functional later (see TECH-PLAN.md §3.7).
 const PLACEHOLDER_FILE_NAME = 'document.pdf';
 
+const isIOS = Platform.OS === 'ios';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -71,11 +73,8 @@ export function AddDocumentSheet({ visible, onClose, onSubmit }: Props) {
         onPress={handleClose}
         testID="add-document-sheet-backdrop"
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.sheetWrapper}
-      >
-        <View style={styles.sheet}>
+      <KeyboardAvoidingView behavior={isIOS ? 'padding' : undefined} style={styles.sheetWrapper}>
+        <View style={[styles.sheet, { paddingBottom: isIOS ? spacing.xxl : spacing.sm }]}>
           <View style={styles.header}>
             <Text variant="subtitle">{t('documents.addDocumentSheet.title')}</Text>
             <Pressable
