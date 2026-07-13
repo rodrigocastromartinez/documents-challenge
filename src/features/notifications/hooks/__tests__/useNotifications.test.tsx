@@ -1,14 +1,26 @@
 import { act, renderHook } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import {
+  dismissLocalNotifications,
+  presentLocalNotification,
+} from '@/features/notifications/localNotifications';
 import { NotificationsClient } from '@/features/notifications/socket/NotificationsClient';
 import { NotificationsProvider } from '@/features/notifications/store/NotificationsProvider';
 import type { NotificationMessage } from '@/features/notifications/types';
 
 jest.mock('@/features/notifications/socket/NotificationsClient');
+jest.mock('@/features/notifications/localNotifications');
 
 const MockedNotificationsClient = NotificationsClient as jest.MockedClass<
   typeof NotificationsClient
+>;
+const mockedPresentLocalNotification = presentLocalNotification as jest.MockedFunction<
+  typeof presentLocalNotification
+>;
+const mockedDismissLocalNotifications = dismissLocalNotifications as jest.MockedFunction<
+  typeof dismissLocalNotifications
 >;
 
 const message: NotificationMessage = {
@@ -20,8 +32,15 @@ const message: NotificationMessage = {
 };
 
 describe('useNotifications', () => {
+  const originalAppState = AppState.currentState;
+
+  beforeEach(() => {
+    AppState.currentState = 'active';
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
+    AppState.currentState = originalAppState;
   });
 
   it('throws when used outside a NotificationsProvider', async () => {
@@ -75,5 +94,59 @@ describe('useNotifications', () => {
 
     expect(result.current.unreadCount).toBe(0);
     expect(result.current.latestMessage).toBeNull();
+  });
+
+  it('does not present a local notification while the app is in the foreground', async () => {
+    AppState.currentState = 'active';
+    await renderHook(() => useNotifications(), { wrapper: NotificationsProvider });
+
+    const { onMessage } = MockedNotificationsClient.mock.calls[0]?.[0] ?? {};
+    await act(async () => onMessage?.(message));
+
+    expect(mockedPresentLocalNotification).not.toHaveBeenCalled();
+  });
+
+  it('presents a local notification when a message arrives while backgrounded', async () => {
+    AppState.currentState = 'background';
+    await renderHook(() => useNotifications(), { wrapper: NotificationsProvider });
+
+    const { onMessage } = MockedNotificationsClient.mock.calls[0]?.[0] ?? {};
+    await act(async () => onMessage?.(message));
+
+    expect(mockedPresentLocalNotification).toHaveBeenCalledWith(message);
+  });
+
+  it('dismisses delivered notifications when the app returns to the foreground', async () => {
+    let appStateListener: ((state: AppStateStatus) => void) | undefined;
+    const addEventListenerSpy = jest
+      .spyOn(AppState, 'addEventListener')
+      .mockImplementation((_event, callback) => {
+        appStateListener = callback;
+        return { remove: jest.fn() };
+      });
+
+    await renderHook(() => useNotifications(), { wrapper: NotificationsProvider });
+
+    await act(async () => appStateListener?.('active'));
+
+    expect(mockedDismissLocalNotifications).toHaveBeenCalledTimes(1);
+    addEventListenerSpy.mockRestore();
+  });
+
+  it('does not dismiss notifications on a transition to the background', async () => {
+    let appStateListener: ((state: AppStateStatus) => void) | undefined;
+    const addEventListenerSpy = jest
+      .spyOn(AppState, 'addEventListener')
+      .mockImplementation((_event, callback) => {
+        appStateListener = callback;
+        return { remove: jest.fn() };
+      });
+
+    await renderHook(() => useNotifications(), { wrapper: NotificationsProvider });
+
+    await act(async () => appStateListener?.('background'));
+
+    expect(mockedDismissLocalNotifications).not.toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
   });
 });

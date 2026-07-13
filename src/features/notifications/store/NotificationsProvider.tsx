@@ -1,6 +1,11 @@
 import { createContext, useCallback, useEffect, useReducer, type ReactNode } from 'react';
-import { LayoutAnimation } from 'react-native';
+import { AppState, LayoutAnimation } from 'react-native';
 
+import {
+  dismissLocalNotifications,
+  presentLocalNotification,
+  requestLocalNotificationPermissions,
+} from '@/features/notifications/localNotifications';
 import { NotificationsClient } from '@/features/notifications/socket/NotificationsClient';
 import {
   initialNotificationsState,
@@ -22,11 +27,32 @@ export function NotificationsProvider({ children }: Props) {
   const [state, dispatch] = useReducer(notificationsReducer, initialNotificationsState);
 
   useEffect(() => {
+    requestLocalNotificationPermissions();
+  }, []);
+
+  useEffect(() => {
+    // Once the user is back in the app, the bell/banner already tell the story — a system
+    // notification lingering in the notification center on top of that is just noise.
+    const subscription = AppState.addEventListener('change', (appState) => {
+      if (appState === 'active') {
+        dismissLocalNotifications();
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     const client = new NotificationsClient({
       onStatusChange: (status) => dispatch({ type: 'STATUS_CHANGED', status }),
       onMessage: (message) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         dispatch({ type: 'MESSAGE_RECEIVED', message });
+        // AppState.currentState is kept in sync natively — reading it at fire time avoids both
+        // re-rendering this provider on every foreground/background transition and the stale
+        // window a state-plus-ref bridge would have.
+        if (AppState.currentState !== 'active') {
+          presentLocalNotification(message);
+        }
       },
     });
     client.connect();

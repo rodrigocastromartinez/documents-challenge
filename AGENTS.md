@@ -167,3 +167,19 @@ require('@react-native-async-storage/async-storage/jest/async-storage-mock'))` i
   WebSocket — extract the delay math into a plain, timer-free function (see
   `computeReconnectDelay` in `NotificationsClient.ts`) and unit-test that directly; keep the
   WebSocket-integration tests on real timers with small millisecond delays instead.
+- **2026-07-12 — importing `expo-notifications` (even just for local notifications) logs a
+  console warning on every import, project-wide, in tests.** It registers a push-token listener
+  at module load time regardless of whether push is ever used, and that listener immediately
+  warns that Android push is unavailable in Expo Go (removed since SDK 53) — noisy in any test
+  file that transitively imports `NotificationsProvider` (which is most of them, since
+  `DocumentsScreen` composes it), not just ones that test notifications directly. There's no
+  official jest mock for this package. Fixed with a minimal project-wide stub of the three
+  functions this app actually calls (`setNotificationHandler`/`requestPermissionsAsync`/
+  `scheduleNotificationAsync`) in `jest.setup.js`, same pattern as AsyncStorage/NetInfo.
+- **2026-07-12 — mutating a ref's `.current` directly in a component's render body (not inside
+  an effect/handler) is now an eslint error** (`react-hooks/refs`, part of the React Compiler-era
+  rules bundled with this project's `eslint-config-expo`), not just a lint nitpick — do the
+  assignment inside a `useEffect(() => { ref.current = value }, [value])` instead. First hit
+  wiring an `appStateRef` in `NotificationsProvider`; that ref was later removed entirely in
+  favor of reading `AppState.currentState` directly at callback-fire time (RN keeps it in sync
+  natively) — often the state-plus-ref bridge isn't needed at all, which is the better fix.
