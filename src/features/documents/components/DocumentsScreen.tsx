@@ -134,5 +134,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
 });

@@ -518,6 +518,27 @@ commit often."
 - Reviewer will run the reference Go server locally (`go run server.go`) alongside the app;
   this will be spelled out in the final README's setup instructions.
 - The app targets both iOS and Android. No platform-specific APIs are used without a
-  `Platform`-appropriate counterpart (e.g. `LayoutAnimation`'s Android opt-in, shadows via
-  `elevation`, the Android notification channel, `10.0.2.2` as the emulator host).
+  `Platform`-appropriate counterpart (shadows via `elevation`, the Android notification channel,
+  `10.0.2.2` as the emulator host).
 - No authentication exists on the reference server, so none is implemented client-side.
+- **Known limitation: `LayoutAnimation` transitions (sort/view-mode toggle, the add-document
+  flow, the notification/offline banners appearing and dismissing) don't animate on Android —
+  they still work, the state change just applies instantly instead of transitioning.** This is
+  not a missing configuration on our side: it's a long-standing upstream React Native bug where
+  `LayoutAnimation` is effectively broken on Android specifically under the **New Architecture
+  (Fabric)**, which this app runs on by default (RN 0.86 / Expo SDK 57 have no legacy-bridge
+  option to fall back to). iOS's Fabric implementation animates correctly; Android's does not
+  yet — see [facebook/react-native#38661](https://github.com/facebook/react-native/issues/38661),
+  [facebook/react-native#47617](https://github.com/facebook/react-native/issues/47617), and
+  [expo/expo#30153](https://github.com/expo/expo/issues/30153) (same symptom: works on iOS, not
+  on Android, with the New Architecture on). The Android-only
+  `UIManager.setLayoutAnimationEnabledExperimental(true)` opt-in this app calls (per RN's own
+  docs) is a no-op under Fabric and doesn't work around it — there's no known workaround using
+  RN's built-in `LayoutAnimation` at all. `LayoutAnimation` was still chosen deliberately for
+  this challenge: zero extra dependencies, and it does animate correctly on iOS, which was the
+  primary manual-verification target during development. **The complete, cross-platform fix
+  would be migrating those four call sites to `react-native-reanimated`'s Layout Animations API**
+  (`LinearTransition`/`Layout`), which implements its own Fabric-compatible animation driver on
+  both platforms instead of relying on RN's broken built-in one. That's a real dependency plus a
+  rewrite of each call site, not a one-line fix, for a gap that's purely cosmetic (nothing is
+  broken functionally) — deferred rather than done for this submission.
