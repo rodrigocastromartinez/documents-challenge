@@ -6,10 +6,10 @@ A React Native (Expo) app that lists documents in real time, notifies the user w
 creates one, and lets the user create their own — built as a technical challenge submission.
 
 This README is the **"how to run it" guide**. For the **"why it's built this way"** — library
-choices, architecture decisions, the full implementation backlog, testing strategy — see
-[TECH-PLAN.md](TECH-PLAN.md), referenced throughout instead of repeated here. For how this
-project's AI-assisted development was set up and steered, see [AGENTS.md](AGENTS.md) and the note
-on that below.
+choices, architecture decisions, design patterns, the full implementation backlog, testing
+strategy — see [TECH-PLAN.md](TECH-PLAN.md), referenced throughout instead of repeated here. For
+how this project's AI-assisted development was set up and steered, see
+[AGENTS.md](AGENTS.md) and the note on that below.
 
 ## Contents
 
@@ -219,9 +219,10 @@ npm test              # Jest + RNTL
 ## Project documentation
 
 - **[TECH-PLAN.md](TECH-PLAN.md)** — the canonical source for _why_: architecture decisions,
-  the full third-party library comparison table (what was used, what was considered and rejected,
-  and why), the testing strategy, and the complete step-by-step implementation backlog as it was
-  actually planned and executed. This README intentionally doesn't repeat any of that.
+  the design patterns in use and where each lives in the code (§3.10), the full third-party
+  library comparison table (what was used, what was considered and rejected, and why), the
+  testing strategy, and the complete step-by-step implementation backlog as it was actually
+  planned and executed. This README intentionally doesn't repeat any of that.
 - **[AGENTS.md](AGENTS.md)** — see the note right below.
 
 ## A note on AI-assisted development and Skills

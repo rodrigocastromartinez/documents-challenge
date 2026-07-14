@@ -438,6 +438,67 @@ created {{document}}"`). `TranslationKey = keyof typeof en` gives autocomplete a
   notification copy) goes into `en.ts` and is read via `t()` — see the convention recorded in
   `AGENTS.md`.
 
+### 3.10 Design patterns in use
+
+The design patterns applied are the following, each addressing a concrete problem in this app rather than adopted for its own sake — in
+keeping with §3.1's guiding principle that no abstraction earns its place on name recognition
+alone. They're named explicitly here so a reviewer can see both where each one lives in the code
+and the reasoning behind it in one place.
+
+- **Observer** — `NotificationsClient` doesn't know React exists: it publishes through injected
+  `onMessage`/`onStatusChange` callbacks, and `NotificationsProvider` subscribes and re-publishes
+  through Context. This decoupling is what makes the WebSocket lifecycle testable in isolation
+  (`jest-websocket-mock`, no React renderer involved), and would let a second consumer (say, an
+  analytics logger) attach without touching the client.
+- **Facade** — three deliberate ones:
+  - `httpClient` hides `fetch` + `AbortController` timeout wiring + error normalization behind
+    `get<T>(path)`; call sites never see a raw `Response` or an `AbortError`, only a typed value
+    or an `HttpError`.
+  - `localNotifications.ts` hides `expo-notifications`' platform quirks (the Android/Expo Go
+    import crash, the Android channel requirement, permission failures) behind three safe,
+    never-throwing functions.
+  - Each feature's `use*()` hook is the facade over its store: `dispatch`, action shapes, and
+    the reducer are private to the feature — components can't couple to them even by accident.
+- **Adapter (anti-corruption layer)** — `mapDocument` (`getDocuments.ts`) and `mapMessage`
+  (`NotificationsClient.ts`) translate the server's `PascalCase` wire format into the app's
+  domain types right at the boundary; app-only concerns (`origin: 'local' | 'remote'`) are added
+  in the same step. Nothing outside `api/`/`socket/` ever sees a `RawDocument` — if the server's
+  schema changed, these two functions are the whole blast radius.
+- **Flux (unidirectional data flow), with reducers as finite state machines** — state only
+  changes through dispatched actions handled by pure reducers (§3.3). `DocumentsState` is a
+  discriminated union keyed on `status`, so illegal states are unrepresentable at the type
+  level — an `error` message can't exist outside the `'error'` state, enforced by the compiler
+  rather than by discipline.
+- **Provider (dependency injection via React Context)** — components receive state and
+  operations through `use*()` hooks backed by providers, never from module-level singletons.
+  That seam is what lets component tests mock `useDocuments` wholesale, and what would let the
+  state layer be swapped per §3.3's migration note without touching a single consumer.
+- **Null Object** — `NotificationsClient` defaults omitted callbacks to no-ops (`?? (() => {})`)
+  instead of storing nullables and null-checking at every call site.
+- **Gateway** — `localDocumentsStorage` / `remoteDocumentsCache` each isolate AsyncStorage keys,
+  serialization, and the degrade-to-empty error policy in one place. Deliberately _not_ a
+  generic Repository: the challenge disallows DB/ORM-style layers, and these are intentionally
+  dumb, feature-named key-value gateways.
+- **Stale-while-revalidate** — the offline behavior in §3.8: hydrate from cache, render
+  immediately, revalidate in the background, replace on success.
+- **Strategy (kept honest)** — `sortDocuments(documents, sortKey)` parameterizes the ordering,
+  which is the Strategy idea — but with exactly two options it's a plain conditional, not
+  polymorphic strategy objects. That function is the seam where a comparator map
+  (`Record<SortKey, Comparator>`) would go if sort options grew; adding that indirection today
+  would be the premature abstraction §3.1 rules out.
+- **Functional core, imperative shell** — the decision-making is pure and unit-tested without
+  mocks (`documentsReducer`, `notificationsReducer`, `sortDocuments`, `formatRelativeDate`,
+  `computeReconnectDelay`); side effects (fetching, sockets, storage, timers) live at the edges,
+  in providers and clients. `computeReconnectDelay` was extracted for exactly this reason — the
+  backoff _math_ is testable without the fake-timer problems of the I/O that surrounds it (see
+  AGENTS.md).
+
+Equally deliberate is what's absent: no Repository interfaces with a single implementation, no
+Factory/Builder for objects with one construction site, no Decorator/middleware chain for a
+pipeline two functions long. At this app's size those would be pattern-for-pattern's-sake — the
+same premature-abstraction trap §3.1 rules out. Each pattern above is here because the problem
+it solves actually occurred.
+
 ## 4. Third-party libraries (final justification will be repeated in README)
 
 | Library                                     | Purpose                                                          | Alternative considered & why rejected                                                                                                                                       |
