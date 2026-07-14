@@ -46,12 +46,12 @@ describe('DocumentListItem', () => {
     expect(within(attachments).getByText('Porter')).toBeOnTheScreen();
   });
 
-  it('exposes a combined accessibility label for the title/version header', async () => {
+  it('exposes a combined accessibility label for the title/version header, separate from the created-at text', async () => {
     await render(<DocumentListItem document={document} />);
 
-    expect(
-      screen.getByLabelText(`Hop Rod Rye, Version 2.6.16, ${expectedCreatedAtLabel}`),
-    ).toBeOnTheScreen();
+    // The created-at Text is its own accessible element (asserted below) — including it in the
+    // header group's label too would make a screen reader announce the date twice.
+    expect(screen.getByLabelText('Hop Rod Rye, Version 2.6.16')).toBeOnTheScreen();
   });
 
   it('renders the created-at label using the bounded relative formatter', async () => {
