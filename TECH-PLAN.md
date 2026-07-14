@@ -87,7 +87,7 @@ actions, and component props — directly supports "maintainable, well-written c
   nothing in this plan depends on avoiding it out of principle.
 - **Every component gets a `testID` and, where it renders meaningful content, an
   `accessibilityLabel`/`accessibilityRole`.** This isn't an afterthought bolted on before
-  submission — it's a rule applied from the first component (see AGENTS.md). Two distinct
+  submission — it's a rule established early on (see AGENTS.md). Two distinct
   reasons drive this, not one: (1) tests query by `testID` rather than matching rendered text,
   so a copy change (i18n string, exact wording) doesn't break a test that was really asserting
   "this element is present and did X," not "this exact string is on screen"; (2) VoiceOver/
