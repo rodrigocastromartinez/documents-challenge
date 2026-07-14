@@ -23,14 +23,14 @@ describe('remoteDocumentsCache', () => {
     await AsyncStorage.clear();
   });
 
-  it('round-trips documents along with a cachedAt timestamp', async () => {
-    await saveRemoteDocumentsCache([doc('1')]);
+  it('round-trips documents along with the given cachedAt timestamp', async () => {
+    const cachedAt = '2026-07-12T10:00:00.000Z';
+    await saveRemoteDocumentsCache([doc('1')], cachedAt);
 
     const cache = await loadRemoteDocumentsCache();
 
     expect(cache?.documents).toEqual([doc('1')]);
-    expect(typeof cache?.cachedAt).toBe('string');
-    expect(Number.isNaN(new Date(cache?.cachedAt ?? '').getTime())).toBe(false);
+    expect(cache?.cachedAt).toBe(cachedAt);
   });
 
   it('returns null when nothing has been cached yet', async () => {
@@ -52,6 +52,8 @@ describe('remoteDocumentsCache', () => {
   it('swallows storage write failures', async () => {
     (AsyncStorage.setItem as jest.Mock).mockRejectedValueOnce(new Error('disk full'));
 
-    await expect(saveRemoteDocumentsCache([doc('1')])).resolves.toBeUndefined();
+    await expect(
+      saveRemoteDocumentsCache([doc('1')], '2026-07-12T10:00:00.000Z'),
+    ).resolves.toBeUndefined();
   });
 });

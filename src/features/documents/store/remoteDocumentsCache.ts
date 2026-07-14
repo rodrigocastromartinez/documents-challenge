@@ -26,9 +26,12 @@ export async function loadRemoteDocumentsCache(): Promise<RemoteDocumentsCache |
   }
 }
 
-export async function saveRemoteDocumentsCache(documents: Document[]): Promise<void> {
+export async function saveRemoteDocumentsCache(
+  documents: Document[],
+  cachedAt: string,
+): Promise<void> {
   try {
-    const cache: RemoteDocumentsCache = { documents, cachedAt: new Date().toISOString() };
+    const cache: RemoteDocumentsCache = { documents, cachedAt };
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
   } catch {
     // Best-effort persistence — a storage failure shouldn't break the live fetch path.

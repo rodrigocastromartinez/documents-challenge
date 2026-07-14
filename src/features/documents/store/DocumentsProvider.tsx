@@ -69,7 +69,7 @@ export function DocumentsProvider({ children }: Props) {
       const documents = await getDocuments();
       const cachedAt = new Date().toISOString();
       dispatch({ type: 'FETCH_SUCCESS', documents, cachedAt });
-      saveRemoteDocumentsCache(documents);
+      saveRemoteDocumentsCache(documents, cachedAt);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       dispatch({ type: 'FETCH_ERROR', error: message });

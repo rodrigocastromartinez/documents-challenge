@@ -170,7 +170,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: spacing.lg,
-    paddingBottom: spacing.xl,
   },
   header: {
     flexDirection: 'row',

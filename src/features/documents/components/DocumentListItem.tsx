@@ -24,7 +24,7 @@ export function DocumentListItem({ document }: Props) {
         <View
           style={styles.header}
           accessible
-          accessibilityLabel={`${document.title}, ${versionLabel}, ${createdAtLabel}`}
+          accessibilityLabel={`${document.title}, ${versionLabel}`}
         >
           <Text
             variant="subtitle"

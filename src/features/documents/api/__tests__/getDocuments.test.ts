@@ -1,13 +1,20 @@
 import { getDocuments } from '@/features/documents/api/getDocuments';
 import { httpClient } from '@/shared/network/httpClient';
 
-jest.mock('@/shared/network/httpClient');
+// A plain jest.mock(moduleName) automock would also automock the HttpError class exported
+// alongside httpClient — breaking its `extends Error` prototype chain, so `new HttpError(...)`
+// stops being recognized by `.toThrow()`/`instanceof Error`. Keep the real HttpError, only stub
+// the network call.
+jest.mock('@/shared/network/httpClient', () => ({
+  ...jest.requireActual('@/shared/network/httpClient'),
+  httpClient: { get: jest.fn() },
+}));
 
 const mockedHttpClient = httpClient as jest.Mocked<typeof httpClient>;
 
 describe('getDocuments', () => {
   afterEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   it('requests /documents and maps the raw response into typed documents', async () => {
@@ -63,5 +70,28 @@ describe('getDocuments', () => {
     mockedHttpClient.get.mockResolvedValueOnce([]);
 
     await expect(getDocuments()).resolves.toEqual([]);
+  });
+
+  it('maps a document with missing Attachments/Contributors fields to empty arrays', async () => {
+    mockedHttpClient.get.mockResolvedValueOnce([
+      {
+        ID: 'doc-3',
+        Title: 'Pliny the Elder',
+        Version: '1.0.0',
+        CreatedAt: '2026-07-01T10:00:00.000Z',
+        UpdatedAt: '2026-07-01T10:00:00.000Z',
+      },
+    ]);
+
+    const [document] = await getDocuments();
+
+    expect(document?.attachments).toEqual([]);
+    expect(document?.contributors).toEqual([]);
+  });
+
+  it('throws an HttpError when the response is not an array', async () => {
+    mockedHttpClient.get.mockResolvedValueOnce({ error: 'not a list' });
+
+    await expect(getDocuments()).rejects.toThrow('Response from /documents was not an array');
   });
 });
