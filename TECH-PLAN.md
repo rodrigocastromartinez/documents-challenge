@@ -106,11 +106,12 @@ src/
 │  │  ├─ api/
 │  │  │  └─ getDocuments.ts     fetch wrapper + mapping to domain types
 │  │  ├─ store/
-│  │  │  ├─ documentsReducer.ts loading/success/error/refetch + locally created docs
-│  │  │  └─ DocumentsProvider.tsx
+│  │  │  ├─ documentsReducer.ts        loading/success/error/refetch + locally created docs
+│  │  │  ├─ DocumentsProvider.tsx
+│  │  │  ├─ localDocumentsStorage.ts   AsyncStorage gateway for locally-created documents
+│  │  │  └─ remoteDocumentsCache.ts    AsyncStorage gateway for the last-known /documents response
 │  │  ├─ hooks/
-│  │  │  ├─ useDocuments.ts
-│  │  │  └─ useCreateDocument.ts
+│  │  │  └─ useDocuments.ts
 │  │  ├─ components/
 │  │  │  ├─ DocumentsScreen.tsx   thin composition: header + <DocumentsContent />
 │  │  │  ├─ DocumentsContent.tsx  loading / error / empty / list state switch
@@ -118,8 +119,10 @@ src/
 │  │  │  ├─ DocumentGridItem.tsx
 │  │  │  ├─ ViewToggle.tsx        list / grid switch
 │  │  │  ├─ SortBySelect.tsx      title / date sort control
+│  │  │  ├─ OfflineBanner.tsx     "showing cached data" banner (see §3.8)
 │  │  │  └─ AddDocumentSheet.tsx  Name / Version / File form
 │  │  ├─ sortDocuments.ts          pure (documents, sortKey) -> Document[]
+│  │  ├─ shareDocument.ts          native Share wrapper (see §3.7)
 │  │  └─ types.ts
 │  └─ notifications/
 │     ├─ socket/
@@ -135,8 +138,8 @@ src/
 │        └─ NotificationBanner.tsx   in-app toast on new message
 ├─ shared/
 │  ├─ components/     Button.tsx, Text.tsx, Spinner.tsx, EmptyState.tsx, ErrorView.tsx
-│  ├─ theme/           colors.ts, spacing.ts, typography.ts
-│  ├─ utils/           formatRelativeDate.ts, id.ts
+│  ├─ theme/           colors.ts, spacing.ts, typography.ts, shadow.ts (cross-platform card shadow)
+│  ├─ utils/           formatRelativeDate.ts
 │  ├─ network/         httpClient.ts, resolveApiBaseUrl.ts
 │  ├─ i18n/             t.ts + strings/en.ts (see §3.9)
 │  └─ hooks/           useIsOnline.ts   connectivity, for the offline banner
@@ -387,10 +390,10 @@ This needs more than "cache to AsyncStorage" to actually hold up, so here's the 
     write-queue/sync-on-reconnect logic to build, because there is no server write path to sync
     to.
   - Both are stored under versioned `AsyncStorage` keys (e.g. `documents.cache.v1`), alongside a
-    `cachedAt` timestamp, via a small `documentsStorage.ts` module (get/set, JSON-safe,
-    swallows/logs storage errors — a full disk or corrupted value should degrade to "no cache,"
-    never crash the app).
-- **Load sequence** (`useDocuments`): on mount, hydrate the reducer from `AsyncStorage`
+    `cachedAt` timestamp, via two small gateway modules — `localDocumentsStorage.ts` and
+    `remoteDocumentsCache.ts` (get/set, JSON-safe, swallows/logs storage errors — a full disk or
+    corrupted value should degrade to "no cache," never crash the app).
+- **Load sequence** (`DocumentsProvider`): on mount, hydrate the reducer from `AsyncStorage`
   immediately if a cache exists (so the UI never shows a blank loading state on a warm start),
   then attempt a live `getDocuments()` fetch in the background:
   - success → replace the remote portion of the list, re-persist, clear any "offline" banner.
@@ -593,7 +596,7 @@ changes), any ORM/DB (disallowed by the challenge).
 14. `NotificationsClient` (WebSocket + reconnect/backoff) + tests
 15. Notifications store/hook + `NotificationBell` + `NotificationBanner` UI + tests
 16. Share button integration
-17. Offline support: `documentsStorage` (cache + local doc persistence), hydrate-then-revalidate
+17. Offline support: `localDocumentsStorage`/`remoteDocumentsCache` (cache + local doc persistence), hydrate-then-revalidate
     in `useDocuments`, `NetInfo`-driven offline banner (see §3.8) + tests
 18. Local notifications (background) integration
 19. Polish: empty/error states, accessibility labels, loading states
