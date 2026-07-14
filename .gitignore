@@ -44,8 +44,4 @@ yarn-error.*
 
 # local Claude Code settings (personal/session permissions, not shared project config)
 .claude/settings.local.json
-
-# Placeholder Expo default icons/splash — kept on disk so the app runs locally, but not
-# committed since they'll be replaced with real assets before final delivery. Remove this rule
-# once real assets are in place.
-/assets/*.png
+.claude/scheduled_tasks.lock
