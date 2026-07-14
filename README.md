@@ -87,8 +87,8 @@ terminal stays open the whole time you're using the app.
 In a **second** terminal window:
 
 ```bash
-git clone <this-repository-url>
-cd mobile-challenge
+git clone https://github.com/rodrigocastromartinez/documents-challenge.git
+cd documents-challenge
 npm install
 ```
 
