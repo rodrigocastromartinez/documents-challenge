@@ -5,12 +5,17 @@ import { colors, spacing } from '@/shared/theme';
 import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 import { t } from '@/shared/i18n/t';
 
+export type OfflineBannerReason = 'offline' | 'serverError';
+
 type Props = {
+  reason: OfflineBannerReason;
   cachedAt: string | null;
 };
 
-export function OfflineBanner({ cachedAt }: Props) {
-  const message = `${t('documents.offline')}${cachedAt ? ' - ' + t('documents.cachedData', { date: formatRelativeDate(new Date(cachedAt)) }) : ''}`;
+export function OfflineBanner({ reason, cachedAt }: Props) {
+  const leadMessage =
+    reason === 'offline' ? t('documents.offline') : t('documents.serverUnreachable');
+  const message = `${leadMessage}${cachedAt ? ' - ' + t('documents.cachedData', { date: formatRelativeDate(new Date(cachedAt)) }) : ''}`;
 
   return (
     <View style={styles.container} testID="offline-banner" accessibilityRole="alert">

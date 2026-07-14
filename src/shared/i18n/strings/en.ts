@@ -35,6 +35,7 @@ export const en = {
   'documents.share': 'Share',
   'documents.shareMessage': '{{title}} — Version {{version}}',
   'documents.offline': 'You are offline',
+  'documents.serverUnreachable': "Can't reach the server",
   'documents.cachedData': 'Showing cached data from {{date}}',
   'notifications.bell': 'Notifications',
   'notifications.unreadCount': '{{count}} unread notifications',

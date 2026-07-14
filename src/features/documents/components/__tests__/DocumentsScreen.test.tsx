@@ -5,6 +5,7 @@ import { useDocuments } from '@/features/documents/hooks/useDocuments';
 import type { Document } from '@/features/documents/types';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { useIsOnline } from '@/shared/hooks/useIsOnline';
+import { formatRelativeDate } from '@/shared/utils/formatRelativeDate';
 
 jest.mock('@/features/documents/hooks/useDocuments');
 jest.mock('@/features/notifications/hooks/useNotifications');
@@ -168,28 +169,31 @@ describe('DocumentsScreen', () => {
     expect(screen.queryByTestId('offline-banner')).toBeNull();
   });
 
-  it('shows the offline banner when connectivity is lost while showing documents', async () => {
+  it('shows an "offline" banner when connectivity is lost while showing documents', async () => {
+    const cachedAt = '2026-07-12T10:00:00.000Z';
     mockedUseIsOnline.mockReturnValue(false);
-    mockedUseDocuments.mockReturnValue(documentsValue({ cachedAt: '2026-07-12T10:00:00.000Z' }));
+    mockedUseDocuments.mockReturnValue(documentsValue({ cachedAt }));
 
     await render(<DocumentsScreen />);
 
-    expect(screen.getByTestId('offline-banner')).toBeOnTheScreen();
+    expect(screen.getByTestId('offline-banner')).toHaveTextContent(
+      `You are offline - Showing cached data from ${formatRelativeDate(new Date(cachedAt))}`,
+    );
     expect(screen.getByTestId('document-list-item-1')).toBeOnTheScreen();
   });
 
-  it('shows the offline banner (not the error screen) when a fetch fails with cached documents', async () => {
+  it('shows a "server unreachable" banner (not "offline", not the error screen) when a fetch fails while online with cached documents', async () => {
+    const cachedAt = '2026-07-12T10:00:00.000Z';
     mockedUseDocuments.mockReturnValue(
-      documentsValue({
-        status: 'error',
-        error: 'network down',
-        cachedAt: '2026-07-12T10:00:00.000Z',
-      }),
+      documentsValue({ status: 'error', error: 'network down', cachedAt }),
     );
 
     await render(<DocumentsScreen />);
 
-    expect(screen.getByTestId('offline-banner')).toBeOnTheScreen();
+    const banner = screen.getByTestId('offline-banner');
+    expect(banner).toHaveTextContent(
+      `Can't reach the server - Showing cached data from ${formatRelativeDate(new Date(cachedAt))}`,
+    );
     expect(screen.getByTestId('document-list-item-1')).toBeOnTheScreen();
     expect(screen.queryByTestId('documents-screen-error')).toBeNull();
   });

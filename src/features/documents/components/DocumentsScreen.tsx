@@ -8,6 +8,7 @@ import {
   OfflineBanner,
   SortBySelect,
   ViewToggle,
+  type OfflineBannerReason,
   type SortKey,
   type ViewMode,
 } from '@/features/documents/components';
@@ -36,9 +37,17 @@ export function DocumentsScreen() {
 
   const sortedDocuments = useMemo(() => sortDocuments(documents, sortKey), [documents, sortKey]);
 
-  // Offline banner: NetInfo catches connectivity loss proactively; a failed fetch with data
-  // still on screen covers the server being unreachable while the network itself is fine.
-  const isShowingStaleData = documents.length > 0 && (!isOnline || status === 'error');
+  // NetInfo catches connectivity loss proactively; a failed fetch with data still on screen
+  // covers the server being unreachable while the network itself is fine — a distinct reason
+  // from actually being offline, so the banner doesn't claim "offline" when it isn't.
+  const staleDataReason: OfflineBannerReason | null =
+    documents.length === 0
+      ? null
+      : !isOnline
+        ? 'offline'
+        : status === 'error'
+          ? 'serverError'
+          : null;
 
   function handleViewModeChange(mode: ViewMode) {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -69,7 +78,7 @@ export function DocumentsScreen() {
         />
       </View>
       <View style={styles.content}>
-        {isShowingStaleData ? <OfflineBanner cachedAt={cachedAt} /> : null}
+        {staleDataReason ? <OfflineBanner reason={staleDataReason} cachedAt={cachedAt} /> : null}
         <NotificationBanner message={latestMessage} />
         <View style={styles.controls}>
           <SortBySelect value={sortKey} onChange={handleSortKeyChange} />
