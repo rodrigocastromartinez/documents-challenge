@@ -11,6 +11,44 @@ strategy — see [TECH-PLAN.md](TECH-PLAN.md), referenced throughout instead of 
 how this project's AI-assisted development was set up and steered, see
 [AGENTS.md](AGENTS.md) and the note on that below.
 
+## Rodrigo's notes
+
+This project has been mostly developed using Claude Code, driven by myself. This is the only section purely written by me.
+My job was to drive the AI with the tasks I wanted to do, how and when, in order to still have the project under control.
+I started by explaining what we have to build, putting special atention in the requirements of the project: scalable,
+maintainable, following good practices and writting my own code instead of using a library when possible. The following are
+some of the most important decissions that I took:
+
+- Using Expo instead of RN CLI. I have experience with both, and even though I'm currently working in a big RN CLI project, I
+  decided to use Expo this time. It offers all the main libraries needed for this project and it streamlines development, dev
+  builds creation and testing. I could even share a working build with reviewers if the server was available online. I think
+  that it's a very interesting and powerful framework, and it's getting more and more support over time.
+- Feature structure. In order to allow the project to grow in the future, I considered using a feature architecture. This allows
+  to isolate every feature, make it grow when necessary and create as many features as we want without mixing them. This is
+  great for maintainability and scalability.
+- Context + useReducer. In order to follow the instruction of reducing the use of libraries and considering the size of the app,
+  a Context + useReducer state management is more than enough here. I particularly consider this is not a great solution for
+  scalability, but applies for this case. If I know that the app will grow, I would consider using a state management library
+  from the very beginning, such as Redux, MobX or Zustand. These kind of libraries have too much boilerplate for the setup,
+  but once it's done they can make global state management way easier.
+- Not using navigation library. This has no sense if there is only one screen. I would use it in both cases of needing a
+  horizontal navigation or a deeper one. For the bottom up sheet I decided not to use gorhom neither, but RN Modal instead.
+- No i18next for translations. As we have only English copies, I decided not to use i18next library. However it would most
+  likely be used if having at least 2 languages.
+- Accessibility labels and testIDs. Accessibility labels were not consider at the very beginning by AI, so I decided to include
+  them. Also, it started using text assertions for testing, and I decided to change and use testIDs instead. I noticed this
+  after a few commits, and decided to improve it.
+- Using Maestro for E2E. As I have experience with Maestro and it is the recommended tool for e2e by Expo documentation, I
+  decided to use it. It has the perk of being really easy to setup and write tests.
+- CI only with unit tests. For the sake of simplicity, I decided not to include e2e tests in the pipeline, but just the unit
+  tests instead (see e2e/README.md for the full reasoning), together with linter, prettier and type checking.
+- Branching strategy. I decided to have a master branch and a development branch. Then, every feature or fix would be a
+  separated branch were the commits will point, and would be merged to develop after finishing the task. Then, develop would
+  be merged to master only on big milestones (in this case, finalizing the assesment).
+- E2E DB isolation. I have evaluated the possibility of separating e2e created data from development data, by using env
+  variables. Again, for the sake of simplicity, I have stored all together. However, this would be one of the first things to
+  do in a real project, in order to avoid conflicts between Devs and QAs.
+
 ## Contents
 
 - [Features implemented](#features-implemented)
